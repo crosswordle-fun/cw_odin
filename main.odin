@@ -2,6 +2,22 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
+BASE_SCREEN_WIDTH :: 1280
+BASE_SCREEN_HEIGHT :: 720
+BASE_CELL_SIZE :: 64
+BASE_GAP :: 4
+BASE_HUD_ITEM_WIDTH :: 56
+BASE_HUD_ROW_HEIGHT :: 30
+BASE_HUD_FONT_SIZE :: 20
+BASE_BOARD_FONT_SIZE :: 28
+BASE_SELECTOR_FONT_SIZE :: 24
+BASE_SELECTOR_OUTLINE :: 3
+BASE_SELECTOR_LABEL_OFFSET :: 6
+BASE_RUNE_PADDING :: 6
+BASE_HUD_VALUE_OFFSET :: 18
+GRID_COLS :: 7
+GRID_ROWS :: 7
+
 Tile :: struct {
 	row: i32,
 	col: i32,
@@ -53,6 +69,12 @@ Grid :: struct {
 	offset_y:      i32,
 }
 
+scaled_i32 :: proc(value: i32, scale: f32) -> i32 {
+	scaled := i32(f32(value) * scale + 0.5)
+	if scaled < 1 do return 1
+	return scaled
+}
+
 Selector :: struct {
 	row: i32,
 	col: i32,
@@ -64,37 +86,50 @@ SelectorBuffer :: struct {
 }
 
 grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
-	cols: i32 = 7
-	rows: i32 = 7
-	cell_size: i32 = 64
-	gap: i32 = 4
-
-	grid_width := cols * cell_size + (cols - 1) * gap
-	grid_height := rows * cell_size + (rows - 1) * gap
+	grid_width := GRID_COLS * BASE_CELL_SIZE + (GRID_COLS - 1) * BASE_GAP
+	grid_height := GRID_ROWS * BASE_CELL_SIZE + (GRID_ROWS - 1) * BASE_GAP
 
 	grid := Grid {
-		tiles         = make([]Tile, cols * rows),
-		frags         = make([]rune, cols * rows),
-		runes         = make([]rune, cols * rows),
-		cols          = cols,
-		rows          = rows,
-		cell_size     = cell_size,
-		gap           = gap,
+		tiles         = make([]Tile, GRID_COLS * GRID_ROWS),
+		frags         = make([]rune, GRID_COLS * GRID_ROWS),
+		runes         = make([]rune, GRID_COLS * GRID_ROWS),
+		cols          = GRID_COLS,
+		rows          = GRID_ROWS,
+		cell_size     = BASE_CELL_SIZE,
+		gap           = BASE_GAP,
 		screen_width  = screen_width,
 		screen_height = screen_height,
-		offset_x      = (screen_width - grid_width) / 2,
-		offset_y      = (screen_height - grid_height) / 2,
+		offset_x      = i32((screen_width - i32(grid_width)) / 2),
+		offset_y      = i32((screen_height - i32(grid_height)) / 2),
 	}
 
 	i := 0
-	for row in 0 ..< rows {
-		for col in 0 ..< cols {
-			grid.tiles[i] = Tile{row, col}
+	for row in 0 ..< GRID_ROWS {
+		for col in 0 ..< GRID_COLS {
+			grid.tiles[i] = Tile{i32(row), i32(col)}
 			i += 1
 		}
 	}
 
 	return grid
+}
+
+grid_update_layout :: proc(grid: ^Grid, screen_width: i32, screen_height: i32) {
+	scale_x := f32(screen_width) / f32(BASE_SCREEN_WIDTH)
+	scale_y := f32(screen_height) / f32(BASE_SCREEN_HEIGHT)
+	scale := scale_x
+	if scale_y < scale do scale = scale_y
+
+	grid.cell_size = scaled_i32(BASE_CELL_SIZE, scale)
+	grid.gap = scaled_i32(BASE_GAP, scale)
+
+	grid_width := grid.cols * grid.cell_size + (grid.cols - 1) * grid.gap
+	grid_height := grid.rows * grid.cell_size + (grid.rows - 1) * grid.gap
+
+	grid.screen_width = screen_width
+	grid.screen_height = screen_height
+	grid.offset_x = (screen_width - grid_width) / 2
+	grid.offset_y = (screen_height - grid_height) / 2
 }
 
 selector_new :: proc(grid: Grid) -> Selector {
@@ -246,7 +281,7 @@ render_selector :: proc(
 	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
 	rl.DrawRectangleLinesEx(
 		rl.Rectangle{f32(x), f32(y), f32(grid.cell_size), f32(grid.cell_size)},
-		3,
+		f32(BASE_SELECTOR_OUTLINE) * f32(grid.cell_size) / f32(BASE_CELL_SIZE),
 		line_color,
 	)
 
@@ -263,15 +298,17 @@ render_selector :: proc(
 render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_buffer: SelectorBuffer) {
 	if selector_buffer.count == 0 do return
 
-	font_size: i32 = 24
+	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
+	font_size := scaled_i32(BASE_SELECTOR_FONT_SIZE, f32(grid.cell_size) / f32(BASE_CELL_SIZE))
+	label_offset := scaled_i32(BASE_SELECTOR_LABEL_OFFSET, scale)
 	for i in 0 ..< selector_buffer.count {
 		x := grid.offset_x + (selector.col + i) * (grid.cell_size + grid.gap)
 		y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
 		label := fmt.caprintf("%c", selector_buffer.letters[i])
 		rl.DrawText(
 			label,
-			x + grid.cell_size - font_size - 6,
-			y + grid.cell_size - font_size - 6,
+			x + grid.cell_size - font_size - label_offset,
+			y + grid.cell_size - font_size - label_offset,
 			font_size,
 			rl.WHITE,
 		)
@@ -279,6 +316,9 @@ render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_buffer
 }
 
 render_grid :: proc(grid: ^Grid) {
+	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
+	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, scale)
+	rune_padding := scaled_i32(BASE_RUNE_PADDING, scale)
 	for i in 0 ..< len(grid.tiles) {
 		tile := grid.tiles[i]
 		x := grid.offset_x + tile.col * (grid.cell_size + grid.gap)
@@ -287,7 +327,6 @@ render_grid :: proc(grid: ^Grid) {
 		if grid.frags[i] != 0 {
 			rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.SKYBLUE)
 			label := fmt.caprintf("%c", grid.frags[i])
-			font_size: i32 = 28
 			text_width := rl.MeasureText(label, font_size)
 			text_x := x + (grid.cell_size - text_width) / 2
 			text_y := y + (grid.cell_size - font_size) / 2
@@ -297,14 +336,12 @@ render_grid :: proc(grid: ^Grid) {
 		}
 
 		if grid.runes[i] != 0 {
-			rune_padding: i32 = 6
 			rune_size := grid.cell_size - rune_padding * 2
 			rune_x := x + rune_padding
 			rune_y := y + rune_padding
 
 			rl.DrawRectangle(rune_x, rune_y, rune_size, rune_size, rl.PURPLE)
 			label := fmt.caprintf("%c", grid.runes[i])
-			font_size: i32 = 28
 			text_width := rl.MeasureText(label, font_size)
 			text_x := rune_x + (rune_size - text_width) / 2
 			text_y := rune_y + (rune_size - font_size) / 2
@@ -314,10 +351,15 @@ render_grid :: proc(grid: ^Grid) {
 }
 
 render_frags :: proc(screen_width, screen_height: i32, frag_counts: Frags) {
-	font_size: i32 = 20
-	item_width: i32 = 56
-	row_height: i32 = 30
-	value_offset: i32 = 18
+	scale_x := f32(screen_width) / f32(BASE_SCREEN_WIDTH)
+	scale_y := f32(screen_height) / f32(BASE_SCREEN_HEIGHT)
+	scale := scale_x
+	if scale_y < scale do scale = scale_y
+
+	font_size := scaled_i32(BASE_HUD_FONT_SIZE, scale)
+	item_width := scaled_i32(BASE_HUD_ITEM_WIDTH, scale)
+	row_height := scaled_i32(BASE_HUD_ROW_HEIGHT, scale)
+	value_offset := scaled_i32(BASE_HUD_VALUE_OFFSET, scale)
 	hud_width := item_width * 13 - 10
 	start_x := (screen_width - hud_width) / 2
 	start_y := screen_height - (row_height * 2) - 20
@@ -336,10 +378,15 @@ render_frags :: proc(screen_width, screen_height: i32, frag_counts: Frags) {
 }
 
 render_runes :: proc(screen_width, screen_height: i32, rune_counts: Runes) {
-	font_size: i32 = 20
-	item_width: i32 = 56
-	row_height: i32 = 30
-	value_offset: i32 = 18
+	scale_x := f32(screen_width) / f32(BASE_SCREEN_WIDTH)
+	scale_y := f32(screen_height) / f32(BASE_SCREEN_HEIGHT)
+	scale := scale_x
+	if scale_y < scale do scale = scale_y
+
+	font_size := scaled_i32(BASE_HUD_FONT_SIZE, scale)
+	item_width := scaled_i32(BASE_HUD_ITEM_WIDTH, scale)
+	row_height := scaled_i32(BASE_HUD_ROW_HEIGHT, scale)
+	value_offset := scaled_i32(BASE_HUD_VALUE_OFFSET, scale)
 	hud_width := item_width * 13 - 10
 	start_x := (screen_width - hud_width) / 2
 	start_y := screen_height - (row_height * 2) - 20
@@ -358,8 +405,8 @@ render_runes :: proc(screen_width, screen_height: i32, rune_counts: Runes) {
 }
 
 main :: proc() {
-	screen_width: i32 = 1280
-	screen_height: i32 = 720
+	screen_width: i32 = BASE_SCREEN_WIDTH
+	screen_height: i32 = BASE_SCREEN_HEIGHT
 
 	rl.SetTargetFPS(60)
 	rl.SetConfigFlags(rl.ConfigFlags{.WINDOW_RESIZABLE})
@@ -375,6 +422,10 @@ main :: proc() {
 	show_frags := true
 
 	for !rl.WindowShouldClose() {
+		screen_width = rl.GetScreenWidth()
+		screen_height = rl.GetScreenHeight()
+		grid_update_layout(&grid, screen_width, screen_height)
+
 		selector_handle_arrow_input(&selector, grid)
 		selector_handle_mouse_input(&selector, grid)
 		selector_buffer_handle_input(&selector_buffer)
@@ -400,4 +451,3 @@ main :: proc() {
 		else do render_runes(screen_width, screen_height, rune_counts)
 	}
 }
-
