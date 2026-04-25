@@ -66,13 +66,3 @@ handle_inventory_debug_input :: proc(state: ^GameState) {
 handle_view_toggle_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do game_toggle_frag_rune_view(state)
 }
-
-handle_input :: proc(state: ^GameState) {
-	handle_arrow_key_input(state)
-	handle_mouse_selection_input(state)
-	handle_selector_buffer_input(state)
-	handle_selector_direction_input(state)
-	handle_submit_input(state)
-	handle_inventory_debug_input(state)
-	handle_view_toggle_input(state)
-}

@@ -117,12 +117,3 @@ render_frags :: proc(screen_width: i32, screen_height: i32, frag_counts: Frags) 
 render_runes :: proc(screen_width: i32, screen_height: i32, rune_counts: Runes) {
 	render_inventory_counts(screen_width, screen_height, rune_counts, rl.PURPLE)
 }
-
-render_game :: proc(state: GameState) {
-	rl.ClearBackground(rl.Color{20, 20, 24, 255})
-	render_grid(state.grid)
-	render_selector(state.grid, state.selector, state.selector_buffer, state.show_frags)
-	render_selector_letter(state.grid, state.selector, state.selector_buffer)
-	if state.show_frags do render_frags(state.screen_width, state.screen_height, state.frag_counts)
-	else do render_runes(state.screen_width, state.screen_height, state.rune_counts)
-}
