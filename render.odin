@@ -64,6 +64,15 @@ render_title :: proc(screen_width: i32, screen_height: i32, game_mode: GameMode)
 	)
 }
 
+render_exp :: proc(screen_width: i32, screen_height: i32, exp: u32) {
+	scale := screen_scale(screen_width, screen_height)
+	font_size := scaled_i32(BASE_HUD_FONT_SIZE, scale)
+	x := scaled_i32(24, scale)
+	y := scaled_i32(24, scale)
+	label := fmt.caprintf("EXP %d", exp)
+	rl.DrawText(label, x, y, font_size, rl.GOLD)
+}
+
 render_selector :: proc(
 	grid: Grid,
 	selector: Selector,
@@ -184,6 +193,23 @@ render_runes :: proc(screen_width: i32, screen_height: i32, rune_counts: Runes) 
 	render_inventory_counts(screen_width, screen_height, rune_counts, rl.PURPLE)
 }
 
+render_cross_exp_reward :: proc(grid: Grid, reward_exp: u32) {
+	if reward_exp == 0 do return
+
+	scale := screen_scale(grid.screen_width, grid.screen_height)
+	font_size := scaled_i32(BASE_HUD_FONT_SIZE, scale)
+	item_width := scaled_i32(BASE_HUD_ITEM_WIDTH, scale)
+	row_height := scaled_i32(BASE_HUD_ROW_HEIGHT, scale)
+	hud_width := item_width * 13 - 10
+	hud_start_y := grid.screen_height - (row_height * 2) - 20
+	grid_bottom := grid.offset_y + grid_pixel_height(grid)
+	y := grid_bottom + (hud_start_y - grid_bottom - font_size) / 2
+
+	label := fmt.caprintf("+%d EXP", reward_exp)
+	label_width := rl.MeasureText(label, font_size)
+	rl.DrawText(label, (grid.screen_width - label_width) / 2, y, font_size, rl.GOLD)
+}
+
 render_letter_tile :: proc(
 	x: i32,
 	y: i32,
@@ -264,15 +290,32 @@ render_crafting :: proc(
 	status_y := selected_y + cell_size + scaled_i32(22, scale)
 	output_label_y := status_y + scaled_i32(50, scale)
 	output_y := output_label_y + scaled_i32(34, scale)
+	output_exp_y := output_y + cell_size + scaled_i32(14, scale)
 	board_width := 5 * cell_size + 4 * gap
 	start_x := (screen_width - board_width) / 2
 
-	render_centered_text("Crafting", screen_width, title_y, scaled_i32(BASE_TITLE_FONT_SIZE, scale), rl.WHITE)
+	render_centered_text(
+		"Crafting",
+		screen_width,
+		title_y,
+		scaled_i32(BASE_TITLE_FONT_SIZE, scale),
+		rl.WHITE,
+	)
 	render_centered_text("Fragments", screen_width, selected_label_y, hud_font_size, rl.SKYBLUE)
 	render_crafting_selected(crafting, start_x, selected_y, cell_size, gap, font_size)
 	render_crafting_recipe_status(screen_width, status_y, hud_font_size, crafting)
 	render_centered_text("Latest Rune", screen_width, output_label_y, hud_font_size, rl.PURPLE)
-	render_crafting_latest_rune(screen_width, output_y, cell_size, font_size, crafting.crafted_rune)
+	render_crafting_latest_rune(
+		screen_width,
+		output_y,
+		cell_size,
+		font_size,
+		crafting.crafted_rune,
+	)
+	if crafting.crafted_rune != 0 {
+		reward_detail := fmt.caprintf("+%d EXP", RUNE_CRAFT_EXP_REWARD)
+		render_centered_text(reward_detail, screen_width, output_exp_y, hud_font_size, rl.GOLD)
+	}
 	if show_frags do render_frags(screen_width, screen_height, frag_counts)
 	else do render_runes(screen_width, screen_height, rune_counts)
 }
@@ -367,6 +410,21 @@ render_wordle_record_level :: proc(
 	level_label := fmt.caprintf("Level %d", record.level + 1)
 	label_width := rl.MeasureText(level_label, font_size)
 	rl.DrawText(level_label, (screen_width - label_width) / 2, y, font_size, rl.WHITE)
+}
+
+render_wordle_record_exp_reward :: proc(
+	screen_width: i32,
+	screen_height: i32,
+	record: WordleLevelRecord,
+	tile_size: i32,
+) {
+	scale := screen_scale(screen_width, screen_height)
+	font_size := scaled_i32(BASE_HUD_FONT_SIZE, scale)
+	margin := tile_size
+	x := margin
+	y := screen_height - tile_size - margin + (tile_size - font_size) / 2
+	label := fmt.caprintf("+%d EXP", record.reward_exp)
+	rl.DrawText(label, x, y, font_size, rl.GOLD)
 }
 
 render_centered_text :: proc(
@@ -468,6 +526,8 @@ render_wordle_win :: proc(screen_width: i32, screen_height: i32, wordle: WordleS
 		wordle.reward_fragment,
 		font_size,
 	)
+	reward_detail := fmt.caprintf("+%d EXP", wordle.reward_exp)
+	render_centered_text(reward_detail, screen_width, reward_detail_y, subtitle_font_size, rl.GOLD)
 }
 
 render_wordle_guesses :: proc(
@@ -563,6 +623,7 @@ render_wordle_history :: proc(
 	render_wordle_record_level(screen_width, screen_height, record)
 	history_reward_size := cell_size / 2
 	history_reward_font_size := font_size / 2
+	render_wordle_record_exp_reward(screen_width, screen_height, record, history_reward_size)
 	render_wordle_history_reward_fragment(
 		screen_width,
 		screen_height,

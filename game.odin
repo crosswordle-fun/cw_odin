@@ -10,6 +10,8 @@ grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
 		tiles         = make([]Tile, GRID_COLS * GRID_ROWS),
 		frags         = make([]rune, GRID_COLS * GRID_ROWS),
 		runes         = make([]rune, GRID_COLS * GRID_ROWS),
+		frag_exp      = make([]u32, GRID_COLS * GRID_ROWS),
+		rune_exp      = make([]u32, GRID_COLS * GRID_ROWS),
 		cols          = GRID_COLS,
 		rows          = GRID_ROWS,
 		cell_size     = BASE_CELL_SIZE,
@@ -24,6 +26,8 @@ grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
 	for row in 0 ..< GRID_ROWS {
 		for col in 0 ..< GRID_COLS {
 			grid.tiles[i] = Tile{i32(row), i32(col)}
+			grid.frag_exp[i] = FRAG_TILE_EXP_REWARD
+			grid.rune_exp[i] = RUNE_TILE_EXP_REWARD
 			i += 1
 		}
 	}
@@ -200,6 +204,7 @@ crafting_submit :: proc(state: ^GameState) {
 		frag_index := i32(letter - 'A')
 		crafting_spend_selection(state.crafting, &state.frag_counts)
 		state.rune_counts[frag_index] += 1
+		state.exp += RUNE_CRAFT_EXP_REWARD
 		state.crafting.crafted_rune = letter
 		crafting_clear_selection(&state.crafting)
 		return
@@ -209,6 +214,7 @@ crafting_submit :: proc(state: ^GameState) {
 		crafted_index := rl.GetRandomValue(0, LETTER_COUNT - 1)
 		crafting_spend_selection(state.crafting, &state.frag_counts)
 		state.rune_counts[crafted_index] += 1
+		state.exp += RUNE_CRAFT_EXP_REWARD
 		state.crafting.crafted_rune = FRAG_LETTERS[crafted_index]
 		crafting_clear_selection(&state.crafting)
 	}
@@ -271,7 +277,10 @@ wordle_clear_current_guess :: proc(wordle: ^WordleState) {
 	wordle.current_count = 0
 }
 
-wordle_evaluate_guess :: proc(guess: [WORDLE_WORD_LEN]rune, solution: [WORDLE_WORD_LEN]rune) -> WordleGuess {
+wordle_evaluate_guess :: proc(
+	guess: [WORDLE_WORD_LEN]rune,
+	solution: [WORDLE_WORD_LEN]rune,
+) -> WordleGuess {
 	result := WordleGuess {
 		letters = guess,
 	}
@@ -330,10 +339,11 @@ wordle_copy_guesses :: proc(guesses: [dynamic]WordleGuess) -> [dynamic]WordleGue
 
 wordle_store_current_level :: proc(wordle: ^WordleState) {
 	record := WordleLevelRecord {
-		guesses = wordle_copy_guesses(wordle.guesses),
-		level = wordle.level,
-		solution = wordle.win_solution,
+		guesses         = wordle_copy_guesses(wordle.guesses),
+		level           = wordle.level,
+		solution        = wordle.win_solution,
 		reward_fragment = wordle.reward_fragment,
+		reward_exp      = wordle.reward_exp,
 	}
 	append(&wordle.history, record)
 }
@@ -344,6 +354,7 @@ wordle_advance_level :: proc(wordle: ^WordleState) {
 	wordle_clear_current_guess(wordle)
 	wordle.win_solution = [WORDLE_WORD_LEN]rune{}
 	wordle.reward_fragment = 0
+	wordle.reward_exp = 0
 	wordle.substate = .Playing
 	wordle.view_mode = .Current
 	wordle.history_index = -1
@@ -364,6 +375,8 @@ wordle_submit_guess :: proc(state: ^GameState) {
 	if wordle_guess_is_solution(guess) {
 		state.wordle.win_solution = solution
 		state.wordle.reward_fragment = wordle_reward_fragment(state, solution)
+		state.wordle.reward_exp = WORDLE_LEVEL_EXP_REWARD
+		state.exp += state.wordle.reward_exp
 		state.wordle.substate = .Won
 	}
 }
@@ -520,6 +533,8 @@ place_frags_from_selector_buffer :: proc(
 	selector: Selector,
 	selector_buffer: SelectorBuffer,
 	frag_counts: ^Frags,
+	exp: ^u32,
+	reward_exp: ^u32,
 ) {
 	for i in 0 ..< selector_buffer.count {
 		letter := selector_buffer.letters[i]
@@ -529,6 +544,8 @@ place_frags_from_selector_buffer :: proc(
 
 		grid.frags[tile_index] = letter
 		frag_counts[frag_index] -= 1
+		exp^ += grid.frag_exp[tile_index]
+		reward_exp^ += grid.frag_exp[tile_index]
 	}
 }
 
@@ -537,6 +554,8 @@ place_runes_from_selector_buffer :: proc(
 	selector: Selector,
 	selector_buffer: SelectorBuffer,
 	rune_counts: ^Runes,
+	exp: ^u32,
+	reward_exp: ^u32,
 ) {
 	for i in 0 ..< selector_buffer.count {
 		letter := selector_buffer.letters[i]
@@ -546,6 +565,8 @@ place_runes_from_selector_buffer :: proc(
 
 		grid.runes[tile_index] = letter
 		rune_counts[frag_index] -= 1
+		exp^ += grid.rune_exp[tile_index]
+		reward_exp^ += grid.rune_exp[tile_index]
 	}
 }
 
@@ -578,21 +599,27 @@ game_submit_selector_buffer :: proc(state: ^GameState) {
 	}
 
 	if state.show_frags {
+		state.cross_reward_exp = 0
 		place_frags_from_selector_buffer(
 			&state.grid,
 			state.selector,
 			state.selector_buffer,
 			&state.frag_counts,
+			&state.exp,
+			&state.cross_reward_exp,
 		)
 		selector_buffer_clear(&state.selector_buffer)
 		return
 	}
 
+	state.cross_reward_exp = 0
 	place_runes_from_selector_buffer(
 		&state.grid,
 		state.selector,
 		state.selector_buffer,
 		&state.rune_counts,
+		&state.exp,
+		&state.cross_reward_exp,
 	)
 	selector_buffer_clear(&state.selector_buffer)
 }

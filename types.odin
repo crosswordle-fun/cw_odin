@@ -23,6 +23,10 @@ GRID_ROWS :: 7
 LETTER_COUNT :: 26
 WORDLE_WORD_LEN :: 5
 WORDLE_SOLUTION_COUNT :: 10
+WORDLE_LEVEL_EXP_REWARD :: 100
+FRAG_TILE_EXP_REWARD :: 500
+RUNE_TILE_EXP_REWARD :: 1000
+RUNE_CRAFT_EXP_REWARD :: 250
 BASE_WORDLE_BOARD_Y :: 125
 BASE_WORDLE_LEVEL_Y :: 92
 
@@ -80,6 +84,8 @@ Grid :: struct {
 	tiles:         []Tile,
 	frags:         []rune,
 	runes:         []rune,
+	frag_exp:      []u32,
+	rune_exp:      []u32,
 	cols:          i32,
 	rows:          i32,
 	cell_size:     i32,
@@ -144,6 +150,7 @@ WordleLevelRecord :: struct {
 	level:           u32,
 	solution:        [WORDLE_WORD_LEN]rune,
 	reward_fragment: rune,
+	reward_exp:      u32,
 }
 
 WordleState :: struct {
@@ -158,19 +165,22 @@ WordleState :: struct {
 	scroll_row:      i32,
 	win_solution:    [WORDLE_WORD_LEN]rune,
 	reward_fragment: rune,
+	reward_exp:      u32,
 }
 
 GameState :: struct {
-	grid:            Grid,
-	selector:        Selector,
-	selector_buffer: SelectorBuffer,
-	wordle:          WordleState,
-	frag_counts:     Frags,
-	rune_counts:     Runes,
-	show_frags:      bool,
-	game_mode:       GameMode,
-	cross_substate:  CrossSubstate,
-	crafting:        CraftingState,
-	screen_width:    i32,
-	screen_height:   i32,
+	grid:             Grid,
+	selector:         Selector,
+	selector_buffer:  SelectorBuffer,
+	wordle:           WordleState,
+	frag_counts:      Frags,
+	rune_counts:      Runes,
+	exp:              u32,
+	cross_reward_exp: u32,
+	show_frags:       bool,
+	game_mode:        GameMode,
+	cross_substate:   CrossSubstate,
+	crafting:         CraftingState,
+	screen_width:     i32,
+	screen_height:    i32,
 }
