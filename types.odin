@@ -63,6 +63,19 @@ FRAG_LETTERS := [LETTER_COUNT]rune {
 	'Z',
 }
 
+WORDLE_SOLUTIONS := [WORDLE_SOLUTION_COUNT]string {
+	"CRANE",
+	"SLATE",
+	"BRICK",
+	"PLANT",
+	"GHOST",
+	"FLAME",
+	"STORM",
+	"CHARM",
+	"BLOOM",
+	"TRACE",
+}
+
 Grid :: struct {
 	tiles:         []Tile,
 	frags:         []rune,

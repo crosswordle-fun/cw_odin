@@ -2,19 +2,6 @@ package main
 
 import rl "vendor:raylib"
 
-WORDLE_SOLUTIONS := [WORDLE_SOLUTION_COUNT][WORDLE_WORD_LEN]rune {
-	{'C', 'R', 'A', 'N', 'E'},
-	{'S', 'L', 'A', 'T', 'E'},
-	{'B', 'R', 'I', 'C', 'K'},
-	{'P', 'L', 'A', 'N', 'T'},
-	{'G', 'H', 'O', 'S', 'T'},
-	{'F', 'L', 'A', 'M', 'E'},
-	{'S', 'T', 'O', 'R', 'M'},
-	{'C', 'H', 'A', 'R', 'M'},
-	{'B', 'L', 'O', 'O', 'M'},
-	{'T', 'R', 'A', 'C', 'E'},
-}
-
 grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
 	grid_width := GRID_COLS * BASE_CELL_SIZE + (GRID_COLS - 1) * BASE_GAP
 	grid_height := GRID_ROWS * BASE_CELL_SIZE + (GRID_ROWS - 1) * BASE_GAP
@@ -129,8 +116,18 @@ wordle_solution_index :: proc(wordle: WordleState) -> i32 {
 	return i32(wordle.level % WORDLE_SOLUTION_COUNT)
 }
 
+wordle_solution_string_to_runes :: proc(solution: string) -> [WORDLE_WORD_LEN]rune {
+	letters := [WORDLE_WORD_LEN]rune{}
+	for i in 0 ..< WORDLE_WORD_LEN {
+		if i < len(solution) {
+			letters[i] = rune(solution[i])
+		}
+	}
+	return letters
+}
+
 wordle_current_solution :: proc(wordle: WordleState) -> [WORDLE_WORD_LEN]rune {
-	return WORDLE_SOLUTIONS[wordle_solution_index(wordle)]
+	return wordle_solution_string_to_runes(WORDLE_SOLUTIONS[wordle_solution_index(wordle)])
 }
 
 wordle_push_letter :: proc(wordle: ^WordleState, letter: rune) {
