@@ -58,8 +58,9 @@ Selector :: struct {
 	col: i32,
 }
 
-SelectorLetter :: struct {
-	letter: rune,
+SelectorBuffer :: struct {
+	letters: [5]rune,
+	count:   i32,
 }
 
 grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
@@ -134,9 +135,12 @@ selector_handle_mouse_input :: proc(selector: ^Selector, grid: Grid) {
 	selector.row = i32((mouse_pos.y - f32(grid.offset_y)) / step)
 }
 
-selector_letter_handle_input :: proc(selector_letter: ^SelectorLetter) {
+selector_buffer_handle_input :: proc(selector_buffer: ^SelectorBuffer) {
 	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
-		selector_letter.letter = 0
+		if selector_buffer.count > 0 {
+			selector_buffer.count -= 1
+			selector_buffer.letters[selector_buffer.count] = 0
+		}
 		return
 	}
 
@@ -151,42 +155,67 @@ selector_letter_handle_input :: proc(selector_letter: ^SelectorLetter) {
 		}
 
 		if ch >= 'A' && ch <= 'Z' {
-			selector_letter.letter = rune(ch)
+			if selector_buffer.count < i32(len(selector_buffer.letters[:])) {
+				selector_buffer.letters[selector_buffer.count] = rune(ch)
+				selector_buffer.count += 1
+			}
 		}
 	}
 }
 
-selector_submit_letter :: proc(
+selector_submit_letters :: proc(
 	grid: ^Grid,
 	selector: Selector,
-	selector_letter: ^SelectorLetter,
+	selector_buffer: ^SelectorBuffer,
 	frag_counts: ^Frags,
 	rune_counts: ^Runes,
 	show_frags: bool,
 ) {
-	if selector_letter.letter == 0 do return
 	if !rl.IsKeyPressed(rl.KeyboardKey.ENTER) do return
+	if selector_buffer.count == 0 do return
 
-	frag_index := i32(selector_letter.letter - 'A')
-	tile_index := selector.row * grid.cols + selector.col
-	if tile_index < 0 || tile_index >= i32(len(grid.frags)) do return
-	if frag_index < 0 || frag_index >= i32(len(frag_counts[:])) do return
+	if selector.col + selector_buffer.count > grid.cols do return
+
+	for i in 0 ..< selector_buffer.count {
+		letter := selector_buffer.letters[i]
+		frag_index := i32(letter - 'A')
+		tile_index := selector.row * grid.cols + selector.col + i
+		if tile_index < 0 || tile_index >= i32(len(grid.frags)) do return
+		if frag_index < 0 || frag_index >= i32(len(frag_counts[:])) do return
+
+		if show_frags {
+			if frag_counts[frag_index] == 0 do return
+			if grid.frags[tile_index] != 0 do return
+			continue
+		}
+
+		if rune_counts[frag_index] == 0 do return
+		if grid.frags[tile_index] != letter do return
+		if grid.runes[tile_index] != 0 do return
+	}
 
 	if show_frags {
-		if frag_counts[frag_index] == 0 do return
-		if grid.frags[tile_index] != 0 do return
+		for i in 0 ..< selector_buffer.count {
+			letter := selector_buffer.letters[i]
+			frag_index := i32(letter - 'A')
+			tile_index := selector.row * grid.cols + selector.col + i
 
-		grid.frags[tile_index] = selector_letter.letter
-		frag_counts[frag_index] -= 1
+			grid.frags[tile_index] = letter
+			frag_counts[frag_index] -= 1
+		}
+		selector_buffer.count = 0
 		return
 	}
 
-	if rune_counts[frag_index] == 0 do return
-	if grid.frags[tile_index] != selector_letter.letter do return
-	if grid.runes[tile_index] != 0 do return
+	for i in 0 ..< selector_buffer.count {
+		letter := selector_buffer.letters[i]
+		frag_index := i32(letter - 'A')
+		tile_index := selector.row * grid.cols + selector.col + i
 
-	grid.runes[tile_index] = selector_letter.letter
-	rune_counts[frag_index] -= 1
+		grid.runes[tile_index] = letter
+		rune_counts[frag_index] -= 1
+	}
+	selector_buffer.count = 0
 }
 
 increment_frags_and_runes :: proc(frag_counts: ^Frags, rune_counts: ^Runes) {
@@ -202,40 +231,51 @@ toggle_frag_rune_view :: proc(show_frags: ^bool) {
 	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do show_frags^ = !show_frags^
 }
 
-render_selector :: proc(grid: ^Grid, selector: ^Selector, show_frags: bool) {
-	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
-	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
+render_selector :: proc(
+	grid: ^Grid,
+	selector: ^Selector,
+	selector_buffer: SelectorBuffer,
+	show_frags: bool,
+) {
 	line_color := rl.SKYBLUE
 	if !show_frags {
 		line_color = rl.PURPLE
 	}
+
+	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
+	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
 	rl.DrawRectangleLinesEx(
 		rl.Rectangle{f32(x), f32(y), f32(grid.cell_size), f32(grid.cell_size)},
 		3,
 		line_color,
 	)
+
+	for i in 0 ..< selector_buffer.count {
+		x := grid.offset_x + (selector.col + i) * (grid.cell_size + grid.gap)
+		rl.DrawRectangleLinesEx(
+			rl.Rectangle{f32(x), f32(y), f32(grid.cell_size), f32(grid.cell_size)},
+			3,
+			line_color,
+		)
+	}
 }
 
-render_selector_letter :: proc(
-	grid: ^Grid,
-	selector: ^Selector,
-	selector_letter: SelectorLetter,
-	show_frags: bool,
-) {
-	if selector_letter.letter == 0 do return
+render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_buffer: SelectorBuffer) {
+	if selector_buffer.count == 0 do return
 
-	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
-	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
 	font_size: i32 = 24
-	label := fmt.caprintf("%c", selector_letter.letter)
-	letter_color := rl.WHITE
-	rl.DrawText(
-		label,
-		x + grid.cell_size - font_size - 6,
-		y + grid.cell_size - font_size - 6,
-		font_size,
-		letter_color,
-	)
+	for i in 0 ..< selector_buffer.count {
+		x := grid.offset_x + (selector.col + i) * (grid.cell_size + grid.gap)
+		y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
+		label := fmt.caprintf("%c", selector_buffer.letters[i])
+		rl.DrawText(
+			label,
+			x + grid.cell_size - font_size - 6,
+			y + grid.cell_size - font_size - 6,
+			font_size,
+			rl.WHITE,
+		)
+	}
 }
 
 render_grid :: proc(grid: ^Grid) {
@@ -329,17 +369,17 @@ main :: proc() {
 	rune_counts := Runes{}
 	grid := grid_new(screen_width, screen_height)
 	selector := selector_new(grid)
-	selector_letter := SelectorLetter{}
+	selector_buffer := SelectorBuffer{}
 	show_frags := true
 
 	for !rl.WindowShouldClose() {
 		selector_handle_arrow_input(&selector, grid)
 		selector_handle_mouse_input(&selector, grid)
-		selector_letter_handle_input(&selector_letter)
-		selector_submit_letter(
+		selector_buffer_handle_input(&selector_buffer)
+		selector_submit_letters(
 			&grid,
 			selector,
-			&selector_letter,
+			&selector_buffer,
 			&frag_counts,
 			&rune_counts,
 			show_frags,
@@ -352,8 +392,8 @@ main :: proc() {
 
 		rl.ClearBackground(rl.Color{20, 20, 24, 255})
 		render_grid(&grid)
-		render_selector(&grid, &selector, show_frags)
-		render_selector_letter(&grid, &selector, selector_letter, show_frags)
+		render_selector(&grid, &selector, selector_buffer, show_frags)
+		render_selector_letter(&grid, &selector, selector_buffer)
 		if show_frags do render_frags(screen_width, screen_height, frag_counts)
 		else do render_runes(screen_width, screen_height, rune_counts)
 	}
