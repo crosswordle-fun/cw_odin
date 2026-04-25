@@ -13,23 +13,30 @@ main :: proc() {
 
 	for !rl.WindowShouldClose() {
 		game_update_screen_size(&state, rl.GetScreenWidth(), rl.GetScreenHeight())
+		handle_game_mode_toggle_input(&state)
 
-		handle_arrow_key_input(&state)
-		handle_mouse_selection_input(&state)
-		handle_selector_buffer_input(&state)
-		handle_selector_direction_input(&state)
-		handle_submit_input(&state)
-		handle_inventory_debug_input(&state)
-		handle_view_toggle_input(&state)
+		if state.game_mode == .Cross {
+			handle_arrow_key_input(&state)
+			handle_mouse_selection_input(&state)
+			handle_selector_buffer_input(&state)
+			handle_selector_direction_input(&state)
+			handle_submit_input(&state)
+			handle_inventory_debug_input(&state)
+			handle_view_toggle_input(&state)
+		}
 
 		rl.BeginDrawing()
 		defer rl.EndDrawing()
 
 		rl.ClearBackground(rl.Color{20, 20, 24, 255})
-		render_grid(state.grid)
-		render_selector(state.grid, state.selector, state.selector_buffer, state.show_frags)
-		render_selector_letter(state.grid, state.selector, state.selector_buffer)
-		if state.show_frags do render_frags(state.screen_width, state.screen_height, state.frag_counts)
-		else do render_runes(state.screen_width, state.screen_height, state.rune_counts)
+		render_title(state.screen_width, state.screen_height, state.game_mode)
+
+		if state.game_mode == .Cross {
+			render_grid(state.grid)
+			render_selector(state.grid, state.selector, state.selector_buffer, state.show_frags)
+			render_selector_letter(state.grid, state.selector, state.selector_buffer)
+			if state.show_frags do render_frags(state.screen_width, state.screen_height, state.frag_counts)
+			else do render_runes(state.screen_width, state.screen_height, state.rune_counts)
+		}
 	}
 }

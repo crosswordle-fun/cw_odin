@@ -9,6 +9,11 @@ BASE_HUD_ROW_HEIGHT :: 30
 BASE_HUD_FONT_SIZE :: 20
 BASE_BOARD_FONT_SIZE :: 28
 BASE_SELECTOR_FONT_SIZE :: 24
+BASE_TITLE_FONT_SIZE :: 48
+BASE_TITLE_GAP :: 16
+BASE_TITLE_PADDING_X :: 10
+BASE_TITLE_PADDING_Y :: 6
+BASE_TITLE_Y :: 30
 BASE_SELECTOR_OUTLINE :: 3
 BASE_SELECTOR_LABEL_OFFSET :: 6
 BASE_RUNE_PADDING :: 6
@@ -79,6 +84,11 @@ SelectorBuffer :: struct {
 	count:   i32,
 }
 
+GameMode :: enum {
+	Cross,
+	Wordle,
+}
+
 GameState :: struct {
 	grid:            Grid,
 	selector:        Selector,
@@ -86,6 +96,7 @@ GameState :: struct {
 	frag_counts:     Frags,
 	rune_counts:     Runes,
 	show_frags:      bool,
+	game_mode:       GameMode,
 	screen_width:    i32,
 	screen_height:   i32,
 }

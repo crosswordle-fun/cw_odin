@@ -39,6 +39,7 @@ game_state_new :: proc(screen_width: i32, screen_height: i32) -> GameState {
 		grid = grid,
 		selector = selector_new(grid),
 		show_frags = true,
+		game_mode = .Cross,
 		screen_width = screen_width,
 		screen_height = screen_height,
 	}
@@ -84,6 +85,15 @@ selector_buffer_clear :: proc(selector_buffer: ^SelectorBuffer) {
 
 game_toggle_frag_rune_view :: proc(state: ^GameState) {
 	state.show_frags = !state.show_frags
+}
+
+game_toggle_mode :: proc(state: ^GameState) {
+	switch state.game_mode {
+	case .Cross:
+		state.game_mode = .Wordle
+	case .Wordle:
+		state.game_mode = .Cross
+	}
 }
 
 game_increment_frags_and_runes :: proc(state: ^GameState) {
@@ -233,4 +243,3 @@ game_submit_selector_buffer :: proc(state: ^GameState) {
 	)
 	selector_buffer_clear(&state.selector_buffer)
 }
-

@@ -3,6 +3,67 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
+render_title_word :: proc(
+	label: cstring,
+	x: i32,
+	y: i32,
+	font_size: i32,
+	padding_x: i32,
+	padding_y: i32,
+	active: bool,
+) {
+	text_width := rl.MeasureText(label, font_size)
+	text_color := rl.WHITE
+
+	if active {
+		rl.DrawRectangle(
+			x - padding_x,
+			y - padding_y,
+			text_width + padding_x * 2,
+			font_size + padding_y * 2,
+			rl.WHITE,
+		)
+		text_color = rl.Color{20, 20, 24, 255}
+	}
+
+	rl.DrawText(label, x, y, font_size, text_color)
+}
+
+render_title :: proc(screen_width: i32, screen_height: i32, game_mode: GameMode) {
+	scale := screen_scale(screen_width, screen_height)
+	font_size := scaled_i32(BASE_TITLE_FONT_SIZE, scale)
+	title_gap := scaled_i32(BASE_TITLE_GAP, scale)
+	padding_x := scaled_i32(BASE_TITLE_PADDING_X, scale)
+	padding_y := scaled_i32(BASE_TITLE_PADDING_Y, scale)
+	y := scaled_i32(BASE_TITLE_Y, scale)
+
+	cross_label: cstring = "Cross"
+	wordle_label: cstring = "Wordle"
+	cross_width := rl.MeasureText(cross_label, font_size)
+	wordle_width := rl.MeasureText(wordle_label, font_size)
+	total_width := cross_width + title_gap + wordle_width
+	start_x := (screen_width - total_width) / 2
+
+	render_title_word(
+		cross_label,
+		start_x,
+		y,
+		font_size,
+		padding_x,
+		padding_y,
+		game_mode == .Cross,
+	)
+	render_title_word(
+		wordle_label,
+		start_x + cross_width + title_gap,
+		y,
+		font_size,
+		padding_x,
+		padding_y,
+		game_mode == .Wordle,
+	)
+}
+
 render_selector :: proc(grid: Grid, selector: Selector, selector_buffer: SelectorBuffer, show_frags: bool) {
 	line_color := rl.SKYBLUE
 	if !show_frags {
