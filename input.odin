@@ -98,3 +98,7 @@ handle_wordle_guess_input :: proc(state: ^GameState) {
 handle_wordle_submit_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) do wordle_submit_guess(state)
 }
+
+handle_wordle_win_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) do wordle_continue_after_win(&state.wordle)
+}

@@ -113,16 +113,24 @@ WordleFeedback :: enum {
 	Correct,
 }
 
+WordleSubstate :: enum {
+	Playing,
+	Won,
+}
+
 WordleGuess :: struct {
 	letters:  [WORDLE_WORD_LEN]rune,
 	feedback: [WORDLE_WORD_LEN]WordleFeedback,
 }
 
 WordleState :: struct {
-	guesses:       [dynamic]WordleGuess,
-	current_guess: [WORDLE_WORD_LEN]rune,
-	current_count: i32,
-	level:         u32,
+	guesses:         [dynamic]WordleGuess,
+	current_guess:   [WORDLE_WORD_LEN]rune,
+	current_count:   i32,
+	level:           u32,
+	substate:        WordleSubstate,
+	win_solution:    [WORDLE_WORD_LEN]rune,
+	reward_fragment: rune,
 }
 
 GameState :: struct {

@@ -109,6 +109,7 @@ game_increment_frags_and_runes :: proc(state: ^GameState) {
 wordle_state_new :: proc() -> WordleState {
 	return WordleState {
 		guesses = make([dynamic]WordleGuess, 0, 32),
+		substate = .Playing,
 	}
 }
 
@@ -131,6 +132,7 @@ wordle_current_solution :: proc(wordle: WordleState) -> [WORDLE_WORD_LEN]rune {
 }
 
 wordle_push_letter :: proc(wordle: ^WordleState, letter: rune) {
+	if wordle.substate != .Playing do return
 	if wordle.current_count < WORDLE_WORD_LEN {
 		wordle.current_guess[wordle.current_count] = letter
 		wordle.current_count += 1
@@ -138,6 +140,7 @@ wordle_push_letter :: proc(wordle: ^WordleState, letter: rune) {
 }
 
 wordle_pop_letter :: proc(wordle: ^WordleState) {
+	if wordle.substate != .Playing do return
 	if wordle.current_count > 0 {
 		wordle.current_count -= 1
 		wordle.current_guess[wordle.current_count] = 0
@@ -190,22 +193,27 @@ wordle_guess_is_solution :: proc(guess: WordleGuess) -> bool {
 	return true
 }
 
-wordle_reward_fragment :: proc(state: ^GameState, solution: [WORDLE_WORD_LEN]rune) {
+wordle_reward_fragment :: proc(state: ^GameState, solution: [WORDLE_WORD_LEN]rune) -> rune {
 	reward_index := rl.GetRandomValue(0, WORDLE_WORD_LEN - 1)
 	letter := solution[reward_index]
 	frag_index := i32(letter - 'A')
 	if frag_index >= 0 && frag_index < LETTER_COUNT {
 		state.frag_counts[frag_index] += 1
 	}
+	return letter
 }
 
 wordle_advance_level :: proc(wordle: ^WordleState) {
 	clear(&wordle.guesses)
 	wordle_clear_current_guess(wordle)
+	wordle.win_solution = [WORDLE_WORD_LEN]rune{}
+	wordle.reward_fragment = 0
+	wordle.substate = .Playing
 	wordle.level += 1
 }
 
 wordle_submit_guess :: proc(state: ^GameState) {
+	if state.wordle.substate != .Playing do return
 	if state.wordle.current_count < WORDLE_WORD_LEN do return
 
 	solution := wordle_current_solution(state.wordle)
@@ -214,9 +222,14 @@ wordle_submit_guess :: proc(state: ^GameState) {
 	wordle_clear_current_guess(&state.wordle)
 
 	if wordle_guess_is_solution(guess) {
-		wordle_reward_fragment(state, solution)
-		wordle_advance_level(&state.wordle)
+		state.wordle.win_solution = solution
+		state.wordle.reward_fragment = wordle_reward_fragment(state, solution)
+		state.wordle.substate = .Won
 	}
+}
+
+wordle_continue_after_win :: proc(wordle: ^WordleState) {
+	if wordle.substate == .Won do wordle_advance_level(wordle)
 }
 
 selector_submission_fits_grid :: proc(grid: Grid, selector: Selector, letter_count: i32) -> bool {
