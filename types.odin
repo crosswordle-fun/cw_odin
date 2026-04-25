@@ -106,6 +106,17 @@ GameMode :: enum {
 	Wordle,
 }
 
+CrossSubstate :: enum {
+	Game,
+	Crafting,
+}
+
+CraftingState :: struct {
+	selected:     [5]rune,
+	count:        i32,
+	crafted_rune: rune,
+}
+
 WordleFeedback :: enum {
 	Empty,
 	Miss,
@@ -158,6 +169,8 @@ GameState :: struct {
 	rune_counts:     Runes,
 	show_frags:      bool,
 	game_mode:       GameMode,
+	cross_substate:  CrossSubstate,
+	crafting:        CraftingState,
 	screen_width:    i32,
 	screen_height:   i32,
 }

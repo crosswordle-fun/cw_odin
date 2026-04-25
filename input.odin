@@ -60,7 +60,11 @@ handle_submit_input :: proc(state: ^GameState) {
 }
 
 handle_inventory_debug_input :: proc(state: ^GameState) {
-	if rl.IsKeyPressed(rl.KeyboardKey.ONE) do game_increment_frags_and_runes(state)
+	if rl.IsKeyPressed(rl.KeyboardKey.ZERO) do game_increment_frags_and_runes(state)
+}
+
+handle_cross_substate_toggle_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.ONE) do cross_toggle_substate(state)
 }
 
 handle_view_toggle_input :: proc(state: ^GameState) {
@@ -71,6 +75,32 @@ handle_view_toggle_input :: proc(state: ^GameState) {
 
 handle_game_mode_toggle_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do game_toggle_mode(state)
+}
+
+handle_crafting_selection_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
+		crafting_pop_letter(&state.crafting)
+		return
+	}
+
+	for {
+		ch := rl.GetCharPressed()
+		if ch == 0 {
+			break
+		}
+
+		if ch >= 'a' && ch <= 'z' {
+			ch -= 'a' - 'A'
+		}
+
+		if ch >= 'A' && ch <= 'Z' {
+			crafting_push_letter(&state.crafting, state.frag_counts, rune(ch))
+		}
+	}
+}
+
+handle_crafting_submit_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) do crafting_submit(state)
 }
 
 wordle_visible_rows_for_state :: proc(state: GameState) -> i32 {

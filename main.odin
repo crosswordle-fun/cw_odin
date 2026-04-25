@@ -16,13 +16,21 @@ main :: proc() {
 		handle_game_mode_toggle_input(&state)
 
 		if state.game_mode == .Cross {
-			handle_arrow_key_input(&state)
-			handle_mouse_selection_input(&state)
-			handle_selector_buffer_input(&state)
-			handle_selector_direction_input(&state)
-			handle_submit_input(&state)
 			handle_inventory_debug_input(&state)
-			handle_view_toggle_input(&state)
+			handle_cross_substate_toggle_input(&state)
+
+			if state.cross_substate == .Game {
+				handle_arrow_key_input(&state)
+				handle_mouse_selection_input(&state)
+				handle_selector_buffer_input(&state)
+				handle_selector_direction_input(&state)
+				handle_submit_input(&state)
+				handle_view_toggle_input(&state)
+			} else if state.cross_substate == .Crafting {
+				handle_crafting_selection_input(&state)
+				handle_crafting_submit_input(&state)
+				handle_view_toggle_input(&state)
+			}
 		} else if state.game_mode == .Wordle {
 			handle_wordle_history_input(&state)
 			handle_wordle_attempt_scroll_input(&state)
@@ -41,11 +49,22 @@ main :: proc() {
 		render_title(state.screen_width, state.screen_height, state.game_mode)
 
 		if state.game_mode == .Cross {
-			render_grid(state.grid)
-			render_selector(state.grid, state.selector, state.selector_buffer, state.show_frags)
-			render_selector_letter(state.grid, state.selector, state.selector_buffer)
-			if state.show_frags do render_frags(state.screen_width, state.screen_height, state.frag_counts)
-			else do render_runes(state.screen_width, state.screen_height, state.rune_counts)
+			if state.cross_substate == .Game {
+				render_grid(state.grid)
+				render_selector(state.grid, state.selector, state.selector_buffer, state.show_frags)
+				render_selector_letter(state.grid, state.selector, state.selector_buffer)
+				if state.show_frags do render_frags(state.screen_width, state.screen_height, state.frag_counts)
+				else do render_runes(state.screen_width, state.screen_height, state.rune_counts)
+			} else if state.cross_substate == .Crafting {
+				render_crafting(
+					state.screen_width,
+					state.screen_height,
+					state.crafting,
+					state.frag_counts,
+					state.rune_counts,
+					state.show_frags,
+				)
+			}
 		} else if state.game_mode == .Wordle {
 			render_wordle(state.screen_width, state.screen_height, state.wordle)
 		}

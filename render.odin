@@ -184,6 +184,99 @@ render_runes :: proc(screen_width: i32, screen_height: i32, rune_counts: Runes) 
 	render_inventory_counts(screen_width, screen_height, rune_counts, rl.PURPLE)
 }
 
+render_letter_tile :: proc(
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	color: rl.Color,
+	font_size: i32,
+) {
+	rl.DrawRectangle(x, y, size, size, color)
+
+	if letter != 0 {
+		label := fmt.caprintf("%c", letter)
+		text_width := rl.MeasureText(label, font_size)
+		text_x := x + (size - text_width) / 2
+		text_y := y + (size - font_size) / 2
+		rl.DrawText(label, text_x, text_y, font_size, rl.WHITE)
+	}
+}
+
+render_crafting_selected :: proc(
+	crafting: CraftingState,
+	x: i32,
+	y: i32,
+	cell_size: i32,
+	gap: i32,
+	font_size: i32,
+) {
+	for i in 0 ..< len(crafting.selected) {
+		tile_x := x + i32(i) * (cell_size + gap)
+		color := rl.DARKGRAY
+		if i32(i) < crafting.count do color = rl.SKYBLUE
+		render_letter_tile(tile_x, y, cell_size, crafting.selected[i], color, font_size)
+	}
+}
+
+render_crafting_latest_rune :: proc(
+	screen_width: i32,
+	y: i32,
+	cell_size: i32,
+	font_size: i32,
+	crafted_rune: rune,
+) {
+	x := (screen_width - cell_size) / 2
+	render_letter_tile(x, y, cell_size, crafted_rune, rl.PURPLE, font_size)
+}
+
+render_crafting_recipe_status :: proc(
+	screen_width: i32,
+	y: i32,
+	font_size: i32,
+	crafting: CraftingState,
+) {
+	label: cstring = "Incomplete Recipe"
+	if crafting.count == 4 && crafting_selection_all_same(crafting) {
+		label = "Matching Rune"
+	} else if crafting.count == 5 && crafting_selection_all_different(crafting) {
+		label = "Random Rune"
+	}
+	render_centered_text(label, screen_width, y, font_size, rl.LIGHTGRAY)
+}
+
+render_crafting :: proc(
+	screen_width: i32,
+	screen_height: i32,
+	crafting: CraftingState,
+	frag_counts: Frags,
+	rune_counts: Runes,
+	show_frags: bool,
+) {
+	scale := screen_scale(screen_width, screen_height)
+	cell_size := scaled_i32(BASE_CELL_SIZE, scale)
+	gap := scaled_i32(BASE_GAP, scale)
+	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, scale)
+	hud_font_size := scaled_i32(BASE_HUD_FONT_SIZE, scale)
+	title_y := scaled_i32(105, scale)
+	selected_label_y := scaled_i32(170, scale)
+	selected_y := selected_label_y + scaled_i32(34, scale)
+	status_y := selected_y + cell_size + scaled_i32(22, scale)
+	output_label_y := status_y + scaled_i32(50, scale)
+	output_y := output_label_y + scaled_i32(34, scale)
+	board_width := 5 * cell_size + 4 * gap
+	start_x := (screen_width - board_width) / 2
+
+	render_centered_text("Crafting", screen_width, title_y, scaled_i32(BASE_TITLE_FONT_SIZE, scale), rl.WHITE)
+	render_centered_text("Fragments", screen_width, selected_label_y, hud_font_size, rl.SKYBLUE)
+	render_crafting_selected(crafting, start_x, selected_y, cell_size, gap, font_size)
+	render_crafting_recipe_status(screen_width, status_y, hud_font_size, crafting)
+	render_centered_text("Latest Rune", screen_width, output_label_y, hud_font_size, rl.PURPLE)
+	render_crafting_latest_rune(screen_width, output_y, cell_size, font_size, crafting.crafted_rune)
+	if show_frags do render_frags(screen_width, screen_height, frag_counts)
+	else do render_runes(screen_width, screen_height, rune_counts)
+}
+
 wordle_feedback_color :: proc(feedback: WordleFeedback) -> rl.Color {
 	switch feedback {
 	case .Correct:
@@ -499,4 +592,3 @@ render_wordle :: proc(screen_width: i32, screen_height: i32, wordle: WordleState
 		render_wordle_win(screen_width, screen_height, wordle)
 	}
 }
-

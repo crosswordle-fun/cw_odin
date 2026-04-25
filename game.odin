@@ -99,10 +99,118 @@ game_toggle_mode :: proc(state: ^GameState) {
 	}
 }
 
+cross_toggle_substate :: proc(state: ^GameState) {
+	if state.game_mode != .Cross do return
+
+	switch state.cross_substate {
+	case .Game:
+		state.cross_substate = .Crafting
+		selector_buffer_clear(&state.selector_buffer)
+	case .Crafting:
+		state.cross_substate = .Game
+		crafting_clear_selection(&state.crafting)
+	}
+}
+
 game_increment_frags_and_runes :: proc(state: ^GameState) {
 	for i in 0 ..< LETTER_COUNT {
 		state.frag_counts[i] += 10
 		state.rune_counts[i] += 1
+	}
+}
+
+crafting_clear_selection :: proc(crafting: ^CraftingState) {
+	for i in 0 ..< len(crafting.selected) {
+		crafting.selected[i] = 0
+	}
+	crafting.count = 0
+}
+
+crafting_selected_count_for_letter :: proc(crafting: CraftingState, letter: rune) -> u32 {
+	count: u32 = 0
+	for i in 0 ..< crafting.count {
+		if crafting.selected[i] == letter do count += 1
+	}
+	return count
+}
+
+crafting_push_letter :: proc(crafting: ^CraftingState, frag_counts: Frags, letter: rune) {
+	if crafting.count >= i32(len(crafting.selected[:])) do return
+
+	frag_index := i32(letter - 'A')
+	if frag_index < 0 || frag_index >= LETTER_COUNT do return
+	if crafting_selected_count_for_letter(crafting^, letter) >= frag_counts[frag_index] do return
+
+	crafting.selected[crafting.count] = letter
+	crafting.count += 1
+}
+
+crafting_pop_letter :: proc(crafting: ^CraftingState) {
+	if crafting.count <= 0 do return
+
+	crafting.count -= 1
+	crafting.selected[crafting.count] = 0
+}
+
+crafting_selection_all_same :: proc(crafting: CraftingState) -> bool {
+	if crafting.count == 0 do return false
+
+	letter := crafting.selected[0]
+	for i in 1 ..< crafting.count {
+		if crafting.selected[i] != letter do return false
+	}
+	return true
+}
+
+crafting_selection_all_different :: proc(crafting: CraftingState) -> bool {
+	for i in 0 ..< crafting.count {
+		for j in i + 1 ..< crafting.count {
+			if crafting.selected[i] == crafting.selected[j] do return false
+		}
+	}
+	return true
+}
+
+crafting_selection_has_inventory :: proc(crafting: CraftingState, frag_counts: Frags) -> bool {
+	required := Frags{}
+	for i in 0 ..< crafting.count {
+		frag_index := i32(crafting.selected[i] - 'A')
+		if frag_index < 0 || frag_index >= LETTER_COUNT do return false
+		required[frag_index] += 1
+	}
+
+	for i in 0 ..< LETTER_COUNT {
+		if required[i] > frag_counts[i] do return false
+	}
+	return true
+}
+
+crafting_spend_selection :: proc(crafting: CraftingState, frag_counts: ^Frags) {
+	for i in 0 ..< crafting.count {
+		frag_index := i32(crafting.selected[i] - 'A')
+		frag_counts[frag_index] -= 1
+	}
+}
+
+crafting_submit :: proc(state: ^GameState) {
+	if !crafting_selection_has_inventory(state.crafting, state.frag_counts) do return
+
+	if state.crafting.count == 4 && crafting_selection_all_same(state.crafting) {
+		letter := state.crafting.selected[0]
+		frag_index := i32(letter - 'A')
+		crafting_spend_selection(state.crafting, &state.frag_counts)
+		state.rune_counts[frag_index] += 1
+		state.crafting.crafted_rune = letter
+		crafting_clear_selection(&state.crafting)
+		return
+	}
+
+	if state.crafting.count == 5 && crafting_selection_all_different(state.crafting) {
+		crafted_index := rl.GetRandomValue(0, LETTER_COUNT - 1)
+		crafting_spend_selection(state.crafting, &state.frag_counts)
+		state.rune_counts[crafted_index] += 1
+		state.crafting.crafted_rune = FRAG_LETTERS[crafted_index]
+		crafting_clear_selection(&state.crafting)
 	}
 }
 
