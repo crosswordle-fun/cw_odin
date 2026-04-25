@@ -202,29 +202,39 @@ toggle_frag_rune_view :: proc(show_frags: ^bool) {
 	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do show_frags^ = !show_frags^
 }
 
-render_selector :: proc(grid: ^Grid, selector: ^Selector) {
+render_selector :: proc(grid: ^Grid, selector: ^Selector, show_frags: bool) {
 	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
 	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
+	line_color := rl.SKYBLUE
+	if !show_frags {
+		line_color = rl.PURPLE
+	}
 	rl.DrawRectangleLinesEx(
 		rl.Rectangle{f32(x), f32(y), f32(grid.cell_size), f32(grid.cell_size)},
 		3,
-		rl.WHITE,
+		line_color,
 	)
 }
 
-render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_letter: SelectorLetter) {
+render_selector_letter :: proc(
+	grid: ^Grid,
+	selector: ^Selector,
+	selector_letter: SelectorLetter,
+	show_frags: bool,
+) {
 	if selector_letter.letter == 0 do return
 
 	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
 	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
 	font_size: i32 = 24
 	label := fmt.caprintf("%c", selector_letter.letter)
+	letter_color := rl.WHITE
 	rl.DrawText(
 		label,
 		x + grid.cell_size - font_size - 6,
 		y + grid.cell_size - font_size - 6,
 		font_size,
-		rl.Color{255, 255, 255, 140},
+		letter_color,
 	)
 }
 
@@ -235,7 +245,7 @@ render_grid :: proc(grid: ^Grid) {
 		y := grid.offset_y + tile.row * (grid.cell_size + grid.gap)
 
 		if grid.frags[i] != 0 {
-			rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.DARKBLUE)
+			rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.SKYBLUE)
 			label := fmt.caprintf("%c", grid.frags[i])
 			font_size: i32 = 28
 			text_width := rl.MeasureText(label, font_size)
@@ -243,7 +253,7 @@ render_grid :: proc(grid: ^Grid) {
 			text_y := y + (grid.cell_size - font_size) / 2
 			rl.DrawText(label, text_x, text_y, font_size, rl.WHITE)
 		} else {
-			rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.GRAY)
+			rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.DARKGRAY)
 		}
 
 		if grid.runes[i] != 0 {
@@ -252,7 +262,7 @@ render_grid :: proc(grid: ^Grid) {
 			rune_x := x + rune_padding
 			rune_y := y + rune_padding
 
-			rl.DrawRectangle(rune_x, rune_y, rune_size, rune_size, rl.DARKPURPLE)
+			rl.DrawRectangle(rune_x, rune_y, rune_size, rune_size, rl.PURPLE)
 			label := fmt.caprintf("%c", grid.runes[i])
 			font_size: i32 = 28
 			text_width := rl.MeasureText(label, font_size)
@@ -280,8 +290,8 @@ render_frags :: proc(screen_width, screen_height: i32, frag_counts: Frags) {
 		label := fmt.caprintf("%c", FRAG_LETTERS[i])
 		value := fmt.caprintf("%d", frag_counts[i])
 
-		rl.DrawText(label, x, y, font_size, rl.DARKBLUE)
-		rl.DrawText(value, x + value_offset, y, font_size, rl.DARKBLUE)
+		rl.DrawText(label, x, y, font_size, rl.SKYBLUE)
+		rl.DrawText(value, x + value_offset, y, font_size, rl.SKYBLUE)
 	}
 }
 
@@ -302,8 +312,8 @@ render_runes :: proc(screen_width, screen_height: i32, rune_counts: Runes) {
 		label := fmt.caprintf("%c", FRAG_LETTERS[i])
 		value := fmt.caprintf("%d", rune_counts[i])
 
-		rl.DrawText(label, x, y, font_size, rl.DARKPURPLE)
-		rl.DrawText(value, x + value_offset, y, font_size, rl.DARKPURPLE)
+		rl.DrawText(label, x, y, font_size, rl.PURPLE)
+		rl.DrawText(value, x + value_offset, y, font_size, rl.PURPLE)
 	}
 }
 
@@ -342,8 +352,8 @@ main :: proc() {
 
 		rl.ClearBackground(rl.Color{20, 20, 24, 255})
 		render_grid(&grid)
-		render_selector(&grid, &selector)
-		render_selector_letter(&grid, &selector, selector_letter)
+		render_selector(&grid, &selector, show_frags)
+		render_selector_letter(&grid, &selector, selector_letter, show_frags)
 		if show_frags do render_frags(screen_width, screen_height, frag_counts)
 		else do render_runes(screen_width, screen_height, rune_counts)
 	}
