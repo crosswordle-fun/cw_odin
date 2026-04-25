@@ -211,6 +211,9 @@ selector_submit_letters :: proc(
 
 	if selector.col + selector_buffer.count > grid.cols do return
 
+	required_frags := Frags{}
+	required_runes := Runes{}
+
 	for i in 0 ..< selector_buffer.count {
 		letter := selector_buffer.letters[i]
 		frag_index := i32(letter - 'A')
@@ -218,15 +221,26 @@ selector_submit_letters :: proc(
 		if tile_index < 0 || tile_index >= i32(len(grid.frags)) do return
 		if frag_index < 0 || frag_index >= i32(len(frag_counts[:])) do return
 
+		required_frags[frag_index] += 1
+		required_runes[frag_index] += 1
+
 		if show_frags {
-			if frag_counts[frag_index] == 0 do return
 			if grid.frags[tile_index] != 0 do return
 			continue
 		}
 
-		if rune_counts[frag_index] == 0 do return
 		if grid.frags[tile_index] != letter do return
 		if grid.runes[tile_index] != 0 do return
+	}
+
+	if show_frags {
+		for i in 0 ..< len(required_frags[:]) {
+			if required_frags[i] > frag_counts[i] do return
+		}
+	} else {
+		for i in 0 ..< len(required_runes[:]) {
+			if required_runes[i] > rune_counts[i] do return
+		}
 	}
 
 	if show_frags {
@@ -451,3 +465,4 @@ main :: proc() {
 		else do render_runes(screen_width, screen_height, rune_counts)
 	}
 }
+
