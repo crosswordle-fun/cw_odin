@@ -41,6 +41,7 @@ FRAG_LETTERS := [26]rune {
 
 Grid :: struct {
 	tiles:         []Tile,
+	frags:         []rune,
 	cols:          i32,
 	rows:          i32,
 	cell_size:     i32,
@@ -71,6 +72,7 @@ grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
 
 	grid := Grid {
 		tiles         = make([]Tile, cols * rows),
+		frags         = make([]rune, cols * rows),
 		cols          = cols,
 		rows          = rows,
 		cell_size     = cell_size,
@@ -112,9 +114,7 @@ selector_handle_arrow_input :: proc(selector: ^Selector, grid: Grid) {
 }
 
 selector_handle_mouse_input :: proc(selector: ^Selector, grid: Grid) {
-	if !rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
-		return
-	}
+	if !rl.IsMouseButtonPressed(rl.MouseButton.LEFT) do return
 
 	mouse_pos := rl.GetMousePosition()
 	grid_right := grid.offset_x + grid.cols * grid.cell_size + (grid.cols - 1) * grid.gap
@@ -154,10 +154,31 @@ selector_letter_handle_input :: proc(selector_letter: ^SelectorLetter) {
 	}
 }
 
+selector_submit_letter :: proc(
+	grid: ^Grid,
+	selector: Selector,
+	selector_letter: ^SelectorLetter,
+	frag_counts: ^Frags,
+) {
+	if selector_letter.letter == 0 do return
+
+	if !rl.IsKeyPressed(rl.KeyboardKey.ENTER) do return
+
+	frag_index := i32(selector_letter.letter - 'A')
+	if frag_index < 0 || frag_index >= i32(len(frag_counts[:])) do return
+
+	if frag_counts[frag_index] == 0 do return
+
+	tile_index := selector.row * grid.cols + selector.col
+	if tile_index < 0 || tile_index >= i32(len(grid.frags)) do return
+	if grid.frags[tile_index] != 0 do return
+
+	grid.frags[tile_index] = selector_letter.letter
+	frag_counts[frag_index] -= 1
+}
+
 increment_frags_and_runes :: proc(frag_counts: ^Frags, rune_counts: ^Runes) {
-	if !rl.IsKeyPressed(rl.KeyboardKey.ONE) {
-		return
-	}
+	if !rl.IsKeyPressed(rl.KeyboardKey.ONE) do return
 
 	for i in 0 ..< len(frag_counts[:]) {
 		frag_counts[i] += 10
@@ -166,9 +187,7 @@ increment_frags_and_runes :: proc(frag_counts: ^Frags, rune_counts: ^Runes) {
 }
 
 toggle_frag_rune_view :: proc(show_frags: ^bool) {
-	if rl.IsKeyPressed(rl.KeyboardKey.TAB) {
-		show_frags^ = !show_frags^
-	}
+	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do show_frags^ = !show_frags^
 }
 
 render_selector :: proc(grid: ^Grid, selector: ^Selector) {
@@ -182,9 +201,7 @@ render_selector :: proc(grid: ^Grid, selector: ^Selector) {
 }
 
 render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_letter: SelectorLetter) {
-	if selector_letter.letter == 0 {
-		return
-	}
+	if selector_letter.letter == 0 do return
 
 	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
 	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
@@ -201,10 +218,21 @@ render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_letter
 }
 
 render_grid :: proc(grid: ^Grid) {
-	for tile in grid.tiles {
+	for i in 0 ..< len(grid.tiles) {
+		tile := grid.tiles[i]
 		x := grid.offset_x + tile.col * (grid.cell_size + grid.gap)
 		y := grid.offset_y + tile.row * (grid.cell_size + grid.gap)
-		rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.GRAY)
+		if grid.frags[i] != 0 {
+			rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.DARKBLUE)
+			label := fmt.caprintf("%c", grid.frags[i])
+			font_size: i32 = 28
+			text_width := rl.MeasureText(label, font_size)
+			text_x := x + (grid.cell_size - text_width) / 2
+			text_y := y + (grid.cell_size - font_size) / 2
+			rl.DrawText(label, text_x, text_y, font_size, rl.WHITE)
+		} else {
+			rl.DrawRectangle(x, y, grid.cell_size, grid.cell_size, rl.GRAY)
+		}
 	}
 }
 
@@ -271,6 +299,7 @@ main :: proc() {
 		selector_handle_arrow_input(&selector, grid)
 		selector_handle_mouse_input(&selector, grid)
 		selector_letter_handle_input(&selector_letter)
+		selector_submit_letter(&grid, selector, &selector_letter, &frag_counts)
 		increment_frags_and_runes(&frag_counts, &rune_counts)
 		toggle_frag_rune_view(&show_frags)
 
@@ -281,10 +310,8 @@ main :: proc() {
 		render_grid(&grid)
 		render_selector(&grid, &selector)
 		render_selector_letter(&grid, &selector, selector_letter)
-		if show_frags {
-			render_frags(screen_width, screen_height, frag_counts)
-		} else {
-			render_runes(screen_width, screen_height, rune_counts)
-		}
+		if show_frags do render_frags(screen_width, screen_height, frag_counts)
+		else do render_runes(screen_width, screen_height, rune_counts)
 	}
 }
+
