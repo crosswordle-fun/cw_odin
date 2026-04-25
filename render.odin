@@ -293,6 +293,27 @@ render_wordle_reward_fragment :: proc(
 	}
 }
 
+render_wordle_history_reward_fragment :: proc(
+	screen_width: i32,
+	screen_height: i32,
+	tile_size: i32,
+	letter: rune,
+	font_size: i32,
+) {
+	margin := tile_size
+	x := screen_width - tile_size - margin
+	y := screen_height - tile_size - margin
+	rl.DrawRectangle(x, y, tile_size, tile_size, rl.SKYBLUE)
+
+	if letter != 0 {
+		label := fmt.caprintf("%c", letter)
+		text_width := rl.MeasureText(label, font_size)
+		text_x := x + (tile_size - text_width) / 2
+		text_y := y + (tile_size - font_size) / 2
+		rl.DrawText(label, text_x, text_y, font_size, rl.WHITE)
+	}
+}
+
 render_wordle_win :: proc(screen_width: i32, screen_height: i32, wordle: WordleState) {
 	scale := screen_scale(screen_width, screen_height)
 	cell_size := scaled_i32(BASE_CELL_SIZE, scale)
@@ -380,7 +401,6 @@ render_wordle_history :: proc(screen_width: i32, screen_height: i32, record: Wor
 	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, scale)
 	board_width := WORDLE_WORD_LEN * cell_size + (WORDLE_WORD_LEN - 1) * gap
 	start_x := (screen_width - board_width) / 2
-	reward_y := (screen_height - cell_size) / 2
 
 	render_wordle_guesses(
 		screen_height,
@@ -395,7 +415,15 @@ render_wordle_history :: proc(screen_width: i32, screen_height: i32, record: Wor
 		font_size,
 	)
 	render_wordle_record_level(screen_width, screen_height, record)
-	render_wordle_reward_fragment(screen_width, reward_y, cell_size, record.reward_fragment, font_size)
+	history_reward_size := cell_size / 2
+	history_reward_font_size := font_size / 2
+	render_wordle_history_reward_fragment(
+		screen_width,
+		screen_height,
+		history_reward_size,
+		record.reward_fragment,
+		history_reward_font_size,
+	)
 }
 
 render_wordle :: proc(screen_width: i32, screen_height: i32, wordle: WordleState) {
