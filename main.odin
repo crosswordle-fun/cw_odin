@@ -362,6 +362,8 @@ main :: proc() {
 	screen_height: i32 = 720
 
 	rl.SetTargetFPS(60)
+	rl.SetConfigFlags(rl.ConfigFlags{.WINDOW_RESIZABLE})
+
 	rl.InitWindow(screen_width, screen_height, "cw_odin")
 	defer rl.CloseWindow()
 
