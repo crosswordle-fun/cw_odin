@@ -56,6 +56,10 @@ Selector :: struct {
 	col: i32,
 }
 
+SelectorLetter :: struct {
+	letter: rune,
+}
+
 grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
 	cols: i32 = 7
 	rows: i32 = 7
@@ -128,6 +132,28 @@ selector_handle_mouse_input :: proc(selector: ^Selector, grid: Grid) {
 	selector.row = i32((mouse_pos.y - f32(grid.offset_y)) / step)
 }
 
+selector_letter_handle_input :: proc(selector_letter: ^SelectorLetter) {
+	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
+		selector_letter.letter = 0
+		return
+	}
+
+	for {
+		ch := rl.GetCharPressed()
+		if ch == 0 {
+			break
+		}
+
+		if ch >= 'a' && ch <= 'z' {
+			ch -= 'a' - 'A'
+		}
+
+		if ch >= 'A' && ch <= 'Z' {
+			selector_letter.letter = rune(ch)
+		}
+	}
+}
+
 increment_frags_and_runes :: proc(frag_counts: ^Frags, rune_counts: ^Runes) {
 	if !rl.IsKeyPressed(rl.KeyboardKey.ONE) {
 		return
@@ -152,6 +178,25 @@ render_selector :: proc(grid: ^Grid, selector: ^Selector) {
 		rl.Rectangle{f32(x), f32(y), f32(grid.cell_size), f32(grid.cell_size)},
 		3,
 		rl.WHITE,
+	)
+}
+
+render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_letter: SelectorLetter) {
+	if selector_letter.letter == 0 {
+		return
+	}
+
+	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
+	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
+	font_size: i32 = 24
+	padding: i32 = 6
+	label := fmt.caprintf("%c", selector_letter.letter)
+	rl.DrawText(
+		label,
+		x + grid.cell_size - font_size - padding,
+		y + grid.cell_size - font_size - padding,
+		font_size,
+		rl.Color{255, 255, 255, 140},
 	)
 }
 
@@ -219,11 +264,13 @@ main :: proc() {
 	rune_counts := Runes{}
 	grid := grid_new(screen_width, screen_height)
 	selector := selector_new(grid)
+	selector_letter := SelectorLetter{}
 	show_frags := true
 
 	for !rl.WindowShouldClose() {
 		selector_handle_arrow_input(&selector, grid)
 		selector_handle_mouse_input(&selector, grid)
+		selector_letter_handle_input(&selector_letter)
 		increment_frags_and_runes(&frag_counts, &rune_counts)
 		toggle_frag_rune_view(&show_frags)
 
@@ -233,6 +280,7 @@ main :: proc() {
 		rl.ClearBackground(rl.Color{20, 20, 24, 255})
 		render_grid(&grid)
 		render_selector(&grid, &selector)
+		render_selector_letter(&grid, &selector, selector_letter)
 		if show_frags {
 			render_frags(screen_width, screen_height, frag_counts)
 		} else {
@@ -240,4 +288,3 @@ main :: proc() {
 		}
 	}
 }
-
