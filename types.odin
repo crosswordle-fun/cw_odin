@@ -118,17 +118,32 @@ WordleSubstate :: enum {
 	Won,
 }
 
+WordleViewMode :: enum {
+	Current,
+	History,
+}
+
 WordleGuess :: struct {
 	letters:  [WORDLE_WORD_LEN]rune,
 	feedback: [WORDLE_WORD_LEN]WordleFeedback,
 }
 
+WordleLevelRecord :: struct {
+	guesses:         [dynamic]WordleGuess,
+	level:           u32,
+	solution:        [WORDLE_WORD_LEN]rune,
+	reward_fragment: rune,
+}
+
 WordleState :: struct {
 	guesses:         [dynamic]WordleGuess,
+	history:         [dynamic]WordleLevelRecord,
 	current_guess:   [WORDLE_WORD_LEN]rune,
 	current_count:   i32,
 	level:           u32,
 	substate:        WordleSubstate,
+	view_mode:       WordleViewMode,
+	history_index:   i32,
 	win_solution:    [WORDLE_WORD_LEN]rune,
 	reward_fragment: rune,
 }

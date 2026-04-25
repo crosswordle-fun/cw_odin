@@ -73,6 +73,12 @@ handle_game_mode_toggle_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do game_toggle_mode(state)
 }
 
+handle_wordle_history_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.LEFT) do wordle_view_previous_level(&state.wordle)
+	if rl.IsKeyPressed(rl.KeyboardKey.RIGHT) do wordle_view_next_level(&state.wordle)
+	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) do wordle_view_current_level(&state.wordle)
+}
+
 handle_wordle_guess_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
 		wordle_pop_letter(&state.wordle)

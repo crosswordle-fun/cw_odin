@@ -109,7 +109,10 @@ game_increment_frags_and_runes :: proc(state: ^GameState) {
 wordle_state_new :: proc() -> WordleState {
 	return WordleState {
 		guesses = make([dynamic]WordleGuess, 0, 32),
+		history = make([dynamic]WordleLevelRecord, 0, 32),
 		substate = .Playing,
+		view_mode = .Current,
+		history_index = -1,
 	}
 }
 
@@ -131,7 +134,12 @@ wordle_current_solution :: proc(wordle: WordleState) -> [WORDLE_WORD_LEN]rune {
 	return wordle_solution_string_to_runes(WORDLE_SOLUTIONS[wordle_solution_index(wordle)])
 }
 
+wordle_is_viewing_current_level :: proc(wordle: WordleState) -> bool {
+	return wordle.view_mode == .Current
+}
+
 wordle_push_letter :: proc(wordle: ^WordleState, letter: rune) {
+	if !wordle_is_viewing_current_level(wordle^) do return
 	if wordle.substate != .Playing do return
 	if wordle.current_count < WORDLE_WORD_LEN {
 		wordle.current_guess[wordle.current_count] = letter
@@ -140,6 +148,7 @@ wordle_push_letter :: proc(wordle: ^WordleState, letter: rune) {
 }
 
 wordle_pop_letter :: proc(wordle: ^WordleState) {
+	if !wordle_is_viewing_current_level(wordle^) do return
 	if wordle.substate != .Playing do return
 	if wordle.current_count > 0 {
 		wordle.current_count -= 1
@@ -203,16 +212,38 @@ wordle_reward_fragment :: proc(state: ^GameState, solution: [WORDLE_WORD_LEN]run
 	return letter
 }
 
+wordle_copy_guesses :: proc(guesses: [dynamic]WordleGuess) -> [dynamic]WordleGuess {
+	copied := make([dynamic]WordleGuess, len(guesses), len(guesses))
+	for i in 0 ..< len(guesses) {
+		copied[i] = guesses[i]
+	}
+	return copied
+}
+
+wordle_store_current_level :: proc(wordle: ^WordleState) {
+	record := WordleLevelRecord {
+		guesses = wordle_copy_guesses(wordle.guesses),
+		level = wordle.level,
+		solution = wordle.win_solution,
+		reward_fragment = wordle.reward_fragment,
+	}
+	append(&wordle.history, record)
+}
+
 wordle_advance_level :: proc(wordle: ^WordleState) {
+	wordle_store_current_level(wordle)
 	clear(&wordle.guesses)
 	wordle_clear_current_guess(wordle)
 	wordle.win_solution = [WORDLE_WORD_LEN]rune{}
 	wordle.reward_fragment = 0
 	wordle.substate = .Playing
+	wordle.view_mode = .Current
+	wordle.history_index = -1
 	wordle.level += 1
 }
 
 wordle_submit_guess :: proc(state: ^GameState) {
+	if !wordle_is_viewing_current_level(state.wordle) do return
 	if state.wordle.substate != .Playing do return
 	if state.wordle.current_count < WORDLE_WORD_LEN do return
 
@@ -229,7 +260,40 @@ wordle_submit_guess :: proc(state: ^GameState) {
 }
 
 wordle_continue_after_win :: proc(wordle: ^WordleState) {
+	if !wordle_is_viewing_current_level(wordle^) do return
 	if wordle.substate == .Won do wordle_advance_level(wordle)
+}
+
+wordle_view_previous_level :: proc(wordle: ^WordleState) {
+	if len(wordle.history) == 0 do return
+
+	if wordle.view_mode == .Current {
+		wordle.view_mode = .History
+		wordle.history_index = i32(len(wordle.history)) - 1
+		return
+	}
+
+	if wordle.history_index > 0 {
+		wordle.history_index -= 1
+	}
+}
+
+wordle_view_next_level :: proc(wordle: ^WordleState) {
+	if wordle.view_mode != .History do return
+
+	last_index := i32(len(wordle.history)) - 1
+	if wordle.history_index < last_index {
+		wordle.history_index += 1
+		return
+	}
+
+	wordle.view_mode = .Current
+	wordle.history_index = -1
+}
+
+wordle_view_current_level :: proc(wordle: ^WordleState) {
+	wordle.view_mode = .Current
+	wordle.history_index = -1
 }
 
 selector_submission_fits_grid :: proc(grid: Grid, selector: Selector, letter_count: i32) -> bool {
