@@ -239,6 +239,7 @@ wordle_advance_level :: proc(wordle: ^WordleState) {
 	wordle.substate = .Playing
 	wordle.view_mode = .Current
 	wordle.history_index = -1
+	wordle.scroll_row = 0
 	wordle.level += 1
 }
 
@@ -270,11 +271,13 @@ wordle_view_previous_level :: proc(wordle: ^WordleState) {
 	if wordle.view_mode == .Current {
 		wordle.view_mode = .History
 		wordle.history_index = i32(len(wordle.history)) - 1
+		wordle.scroll_row = 0
 		return
 	}
 
 	if wordle.history_index > 0 {
 		wordle.history_index -= 1
+		wordle.scroll_row = 0
 	}
 }
 
@@ -284,16 +287,65 @@ wordle_view_next_level :: proc(wordle: ^WordleState) {
 	last_index := i32(len(wordle.history)) - 1
 	if wordle.history_index < last_index {
 		wordle.history_index += 1
+		wordle.scroll_row = 0
 		return
 	}
 
 	wordle.view_mode = .Current
 	wordle.history_index = -1
+	wordle.scroll_row = 0
 }
 
 wordle_view_current_level :: proc(wordle: ^WordleState) {
 	wordle.view_mode = .Current
 	wordle.history_index = -1
+	wordle.scroll_row = 0
+}
+
+wordle_visible_row_count :: proc(screen_height: i32, start_y: i32, row_step: i32) -> i32 {
+	visible_rows := (screen_height - start_y - row_step) / row_step
+	if visible_rows < 1 do visible_rows = 1
+	return visible_rows
+}
+
+wordle_current_total_rows :: proc(wordle: WordleState) -> i32 {
+	if wordle.substate == .Playing {
+		return i32(len(wordle.guesses)) + 1
+	}
+	return i32(len(wordle.guesses))
+}
+
+wordle_history_total_rows :: proc(wordle: WordleState) -> i32 {
+	if wordle.history_index < 0 || wordle.history_index >= i32(len(wordle.history)) do return 0
+	return i32(len(wordle.history[wordle.history_index].guesses))
+}
+
+wordle_view_total_rows :: proc(wordle: WordleState) -> i32 {
+	if wordle.view_mode == .History do return wordle_history_total_rows(wordle)
+	return wordle_current_total_rows(wordle)
+}
+
+wordle_clamp_scroll_row :: proc(wordle: ^WordleState, visible_rows: i32) {
+	total_rows := wordle_view_total_rows(wordle^)
+	max_scroll := total_rows - visible_rows
+	if max_scroll < 0 do max_scroll = 0
+	wordle.scroll_row = clamp(wordle.scroll_row, 0, max_scroll)
+}
+
+wordle_scroll_attempts_latest :: proc(wordle: ^WordleState, visible_rows: i32) {
+	total_rows := wordle_view_total_rows(wordle^)
+	wordle.scroll_row = total_rows - visible_rows
+	wordle_clamp_scroll_row(wordle, visible_rows)
+}
+
+wordle_scroll_attempts_up :: proc(wordle: ^WordleState, visible_rows: i32) {
+	wordle.scroll_row -= 1
+	wordle_clamp_scroll_row(wordle, visible_rows)
+}
+
+wordle_scroll_attempts_down :: proc(wordle: ^WordleState, visible_rows: i32) {
+	wordle.scroll_row += 1
+	wordle_clamp_scroll_row(wordle, visible_rows)
 }
 
 selector_submission_fits_grid :: proc(grid: Grid, selector: Selector, letter_count: i32) -> bool {

@@ -25,6 +25,7 @@ main :: proc() {
 			handle_view_toggle_input(&state)
 		} else if state.game_mode == .Wordle {
 			handle_wordle_history_input(&state)
+			handle_wordle_attempt_scroll_input(&state)
 			if state.wordle.substate == .Playing {
 				handle_wordle_guess_input(&state)
 				handle_wordle_submit_input(&state)

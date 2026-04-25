@@ -144,6 +144,7 @@ WordleState :: struct {
 	substate:        WordleSubstate,
 	view_mode:       WordleViewMode,
 	history_index:   i32,
+	scroll_row:      i32,
 	win_solution:    [WORDLE_WORD_LEN]rune,
 	reward_fragment: rune,
 }

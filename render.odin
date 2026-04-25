@@ -313,6 +313,7 @@ render_wordle_guesses :: proc(
 	guesses: [dynamic]WordleGuess,
 	current_guess: [WORDLE_WORD_LEN]rune,
 	show_current_row: bool,
+	scroll_row: i32,
 	start_x: i32,
 	start_y: i32,
 	cell_size: i32,
@@ -326,17 +327,19 @@ render_wordle_guesses :: proc(
 	if visible_rows < 1 do visible_rows = 1
 
 	total_rows := i32(len(guesses)) + current_row_count
-	first_row := total_rows - visible_rows
-	if first_row < 0 do first_row = 0
+	max_scroll := total_rows - visible_rows
+	if max_scroll < 0 do max_scroll = 0
+	first_row := clamp(scroll_row, 0, max_scroll)
+	last_row := first_row + visible_rows
 
 	draw_row: i32 = 0
-	for guess_index in first_row ..< i32(len(guesses)) {
+	for guess_index in first_row ..< min(i32(len(guesses)), last_row) {
 		y := start_y + draw_row * row_step
 		render_wordle_guess_row(guesses[guess_index], start_x, y, cell_size, gap, font_size)
 		draw_row += 1
 	}
 
-	if show_current_row {
+	if show_current_row && i32(len(guesses)) >= first_row && i32(len(guesses)) < last_row {
 		y := start_y + draw_row * row_step
 		current_wordle := WordleState {
 			current_guess = current_guess,
@@ -359,6 +362,7 @@ render_wordle_playing :: proc(screen_width: i32, screen_height: i32, wordle: Wor
 		wordle.guesses,
 		wordle.current_guess,
 		true,
+		wordle.scroll_row,
 		start_x,
 		start_y,
 		cell_size,
@@ -368,7 +372,7 @@ render_wordle_playing :: proc(screen_width: i32, screen_height: i32, wordle: Wor
 	render_wordle_level(screen_width, screen_height, wordle)
 }
 
-render_wordle_history :: proc(screen_width: i32, screen_height: i32, record: WordleLevelRecord) {
+render_wordle_history :: proc(screen_width: i32, screen_height: i32, record: WordleLevelRecord, scroll_row: i32) {
 	scale := screen_scale(screen_width, screen_height)
 	cell_size := scaled_i32(BASE_CELL_SIZE, scale)
 	gap := scaled_i32(BASE_GAP, scale)
@@ -383,6 +387,7 @@ render_wordle_history :: proc(screen_width: i32, screen_height: i32, record: Wor
 		record.guesses,
 		[WORDLE_WORD_LEN]rune{},
 		false,
+		scroll_row,
 		start_x,
 		start_y,
 		cell_size,
@@ -396,7 +401,7 @@ render_wordle_history :: proc(screen_width: i32, screen_height: i32, record: Wor
 render_wordle :: proc(screen_width: i32, screen_height: i32, wordle: WordleState) {
 	if wordle.view_mode == .History {
 		if wordle.history_index >= 0 && wordle.history_index < i32(len(wordle.history)) {
-			render_wordle_history(screen_width, screen_height, wordle.history[wordle.history_index])
+			render_wordle_history(screen_width, screen_height, wordle.history[wordle.history_index], wordle.scroll_row)
 		}
 		return
 	}

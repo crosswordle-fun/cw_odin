@@ -73,10 +73,36 @@ handle_game_mode_toggle_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do game_toggle_mode(state)
 }
 
+wordle_visible_rows_for_state :: proc(state: GameState) -> i32 {
+	scale := screen_scale(state.screen_width, state.screen_height)
+	cell_size := scaled_i32(BASE_CELL_SIZE, scale)
+	gap := scaled_i32(BASE_GAP, scale)
+	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, scale)
+	row_step := cell_size + gap
+	return wordle_visible_row_count(state.screen_height, start_y, row_step)
+}
+
 handle_wordle_history_input :: proc(state: ^GameState) {
-	if rl.IsKeyPressed(rl.KeyboardKey.LEFT) do wordle_view_previous_level(&state.wordle)
-	if rl.IsKeyPressed(rl.KeyboardKey.RIGHT) do wordle_view_next_level(&state.wordle)
-	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) do wordle_view_current_level(&state.wordle)
+	visible_rows := wordle_visible_rows_for_state(state^)
+	if rl.IsKeyPressed(rl.KeyboardKey.LEFT) {
+		wordle_view_previous_level(&state.wordle)
+		wordle_scroll_attempts_latest(&state.wordle, visible_rows)
+	}
+	if rl.IsKeyPressed(rl.KeyboardKey.RIGHT) {
+		wordle_view_next_level(&state.wordle)
+		wordle_scroll_attempts_latest(&state.wordle, visible_rows)
+	}
+	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
+		wordle_view_current_level(&state.wordle)
+		wordle_scroll_attempts_latest(&state.wordle, visible_rows)
+	}
+}
+
+handle_wordle_attempt_scroll_input :: proc(state: ^GameState) {
+	visible_rows := wordle_visible_rows_for_state(state^)
+
+	if rl.IsKeyPressed(rl.KeyboardKey.UP) do wordle_scroll_attempts_up(&state.wordle, visible_rows)
+	if rl.IsKeyPressed(rl.KeyboardKey.DOWN) do wordle_scroll_attempts_down(&state.wordle, visible_rows)
 }
 
 handle_wordle_guess_input :: proc(state: ^GameState) {
@@ -102,7 +128,10 @@ handle_wordle_guess_input :: proc(state: ^GameState) {
 }
 
 handle_wordle_submit_input :: proc(state: ^GameState) {
-	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) do wordle_submit_guess(state)
+	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) {
+		wordle_submit_guess(state)
+		wordle_scroll_attempts_latest(&state.wordle, wordle_visible_rows_for_state(state^))
+	}
 }
 
 handle_wordle_win_input :: proc(state: ^GameState) {
