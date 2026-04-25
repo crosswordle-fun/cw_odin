@@ -1,9 +1,42 @@
 package main
+import "core:fmt"
 import rl "vendor:raylib"
 
 Tile :: struct {
 	row: i32,
 	col: i32,
+}
+
+Frags :: [26]u32
+Runes :: [26]u32
+
+FRAG_LETTERS := [26]rune {
+	'A',
+	'B',
+	'C',
+	'D',
+	'E',
+	'F',
+	'G',
+	'H',
+	'I',
+	'J',
+	'K',
+	'L',
+	'M',
+	'N',
+	'O',
+	'P',
+	'Q',
+	'R',
+	'S',
+	'T',
+	'U',
+	'V',
+	'W',
+	'X',
+	'Y',
+	'Z',
 }
 
 Grid :: struct {
@@ -24,8 +57,8 @@ Selector :: struct {
 }
 
 grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
-	cols: i32 = 15
-	rows: i32 = 9
+	cols: i32 = 7
+	rows: i32 = 7
 	cell_size: i32 = 64
 	gap: i32 = 4
 
@@ -95,6 +128,23 @@ selector_handle_mouse_input :: proc(selector: ^Selector, grid: Grid) {
 	selector.row = i32((mouse_pos.y - f32(grid.offset_y)) / step)
 }
 
+increment_frags_and_runes :: proc(frag_counts: ^Frags, rune_counts: ^Runes) {
+	if !rl.IsKeyPressed(rl.KeyboardKey.ONE) {
+		return
+	}
+
+	for i in 0 ..< len(frag_counts[:]) {
+		frag_counts[i] += 10
+		rune_counts[i] += 1
+	}
+}
+
+toggle_frag_rune_view :: proc(show_frags: ^bool) {
+	if rl.IsKeyPressed(rl.KeyboardKey.TAB) {
+		show_frags^ = !show_frags^
+	}
+}
+
 render_selector :: proc(grid: ^Grid, selector: ^Selector) {
 	x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
 	y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
@@ -113,6 +163,50 @@ render_grid :: proc(grid: ^Grid) {
 	}
 }
 
+render_frags :: proc(screen_width, screen_height: i32, frag_counts: Frags) {
+	font_size: i32 = 20
+	item_width: i32 = 56
+	row_height: i32 = 30
+	value_offset: i32 = 18
+	hud_width := item_width * 13 - 10
+	start_x := (screen_width - hud_width) / 2
+	start_y := screen_height - (row_height * 2) - 20
+
+	for i in 0 ..< 26 {
+		row := i32(i / 13)
+		col := i32(i % 13)
+		x := start_x + col * item_width
+		y := start_y + row * row_height
+		label := fmt.caprintf("%c", FRAG_LETTERS[i])
+		value := fmt.caprintf("%d", frag_counts[i])
+
+		rl.DrawText(label, x, y, font_size, rl.DARKBLUE)
+		rl.DrawText(value, x + value_offset, y, font_size, rl.DARKBLUE)
+	}
+}
+
+render_runes :: proc(screen_width, screen_height: i32, rune_counts: Runes) {
+	font_size: i32 = 20
+	item_width: i32 = 56
+	row_height: i32 = 30
+	value_offset: i32 = 18
+	hud_width := item_width * 13 - 10
+	start_x := (screen_width - hud_width) / 2
+	start_y := screen_height - (row_height * 2) - 20
+
+	for i in 0 ..< 26 {
+		row := i32(i / 13)
+		col := i32(i % 13)
+		x := start_x + col * item_width
+		y := start_y + row * row_height
+		label := fmt.caprintf("%c", FRAG_LETTERS[i])
+		value := fmt.caprintf("%d", rune_counts[i])
+
+		rl.DrawText(label, x, y, font_size, rl.DARKPURPLE)
+		rl.DrawText(value, x + value_offset, y, font_size, rl.DARKPURPLE)
+	}
+}
+
 main :: proc() {
 	screen_width: i32 = 1280
 	screen_height: i32 = 720
@@ -121,12 +215,17 @@ main :: proc() {
 	rl.InitWindow(screen_width, screen_height, "cw_odin")
 	defer rl.CloseWindow()
 
+	frag_counts := Frags{}
+	rune_counts := Runes{}
 	grid := grid_new(screen_width, screen_height)
 	selector := selector_new(grid)
+	show_frags := true
 
 	for !rl.WindowShouldClose() {
 		selector_handle_arrow_input(&selector, grid)
 		selector_handle_mouse_input(&selector, grid)
+		increment_frags_and_runes(&frag_counts, &rune_counts)
+		toggle_frag_rune_view(&show_frags)
 
 		rl.BeginDrawing()
 		defer rl.EndDrawing()
@@ -134,6 +233,11 @@ main :: proc() {
 		rl.ClearBackground(rl.Color{20, 20, 24, 255})
 		render_grid(&grid)
 		render_selector(&grid, &selector)
+		if show_frags {
+			render_frags(screen_width, screen_height, frag_counts)
+		} else {
+			render_runes(screen_width, screen_height, rune_counts)
+		}
 	}
 }
 
