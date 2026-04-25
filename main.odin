@@ -76,8 +76,9 @@ scaled_i32 :: proc(value: i32, scale: f32) -> i32 {
 }
 
 Selector :: struct {
-	row: i32,
-	col: i32,
+	row:  i32,
+	col:  i32,
+	down: bool,
 }
 
 SelectorBuffer :: struct {
@@ -170,6 +171,10 @@ selector_handle_mouse_input :: proc(selector: ^Selector, grid: Grid) {
 	selector.row = i32((mouse_pos.y - f32(grid.offset_y)) / step)
 }
 
+toggle_selector_direction :: proc(selector: ^Selector) {
+	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) do selector.down = !selector.down
+}
+
 selector_buffer_handle_input :: proc(selector_buffer: ^SelectorBuffer) {
 	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
 		if selector_buffer.count > 0 {
@@ -209,7 +214,11 @@ selector_submit_letters :: proc(
 	if !rl.IsKeyPressed(rl.KeyboardKey.ENTER) do return
 	if selector_buffer.count == 0 do return
 
-	if selector.col + selector_buffer.count > grid.cols do return
+	if selector.down {
+		if selector.row + selector_buffer.count > grid.rows do return
+	} else {
+		if selector.col + selector_buffer.count > grid.cols do return
+	}
 
 	required_frags := Frags{}
 	required_runes := Runes{}
@@ -217,7 +226,14 @@ selector_submit_letters :: proc(
 	for i in 0 ..< selector_buffer.count {
 		letter := selector_buffer.letters[i]
 		frag_index := i32(letter - 'A')
-		tile_index := selector.row * grid.cols + selector.col + i
+		tile_row := selector.row
+		tile_col := selector.col
+		if selector.down {
+			tile_row += i
+		} else {
+			tile_col += i
+		}
+		tile_index := tile_row * grid.cols + tile_col
 		if tile_index < 0 || tile_index >= i32(len(grid.frags)) do return
 		if frag_index < 0 || frag_index >= i32(len(frag_counts[:])) do return
 
@@ -247,7 +263,14 @@ selector_submit_letters :: proc(
 		for i in 0 ..< selector_buffer.count {
 			letter := selector_buffer.letters[i]
 			frag_index := i32(letter - 'A')
-			tile_index := selector.row * grid.cols + selector.col + i
+			tile_row := selector.row
+			tile_col := selector.col
+			if selector.down {
+				tile_row += i
+			} else {
+				tile_col += i
+			}
+			tile_index := tile_row * grid.cols + tile_col
 
 			grid.frags[tile_index] = letter
 			frag_counts[frag_index] -= 1
@@ -259,7 +282,14 @@ selector_submit_letters :: proc(
 	for i in 0 ..< selector_buffer.count {
 		letter := selector_buffer.letters[i]
 		frag_index := i32(letter - 'A')
-		tile_index := selector.row * grid.cols + selector.col + i
+		tile_row := selector.row
+		tile_col := selector.col
+		if selector.down {
+			tile_row += i
+		} else {
+			tile_col += i
+		}
+		tile_index := tile_row * grid.cols + tile_col
 
 		grid.runes[tile_index] = letter
 		rune_counts[frag_index] -= 1
@@ -300,7 +330,13 @@ render_selector :: proc(
 	)
 
 	for i in 0 ..< selector_buffer.count {
-		x := grid.offset_x + (selector.col + i) * (grid.cell_size + grid.gap)
+		x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
+		y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
+		if selector.down {
+			y = grid.offset_y + (selector.row + i) * (grid.cell_size + grid.gap)
+		} else {
+			x = grid.offset_x + (selector.col + i) * (grid.cell_size + grid.gap)
+		}
 		rl.DrawRectangleLinesEx(
 			rl.Rectangle{f32(x), f32(y), f32(grid.cell_size), f32(grid.cell_size)},
 			3,
@@ -316,8 +352,13 @@ render_selector_letter :: proc(grid: ^Grid, selector: ^Selector, selector_buffer
 	font_size := scaled_i32(BASE_SELECTOR_FONT_SIZE, f32(grid.cell_size) / f32(BASE_CELL_SIZE))
 	label_offset := scaled_i32(BASE_SELECTOR_LABEL_OFFSET, scale)
 	for i in 0 ..< selector_buffer.count {
-		x := grid.offset_x + (selector.col + i) * (grid.cell_size + grid.gap)
+		x := grid.offset_x + selector.col * (grid.cell_size + grid.gap)
 		y := grid.offset_y + selector.row * (grid.cell_size + grid.gap)
+		if selector.down {
+			y = grid.offset_y + (selector.row + i) * (grid.cell_size + grid.gap)
+		} else {
+			x = grid.offset_x + (selector.col + i) * (grid.cell_size + grid.gap)
+		}
 		label := fmt.caprintf("%c", selector_buffer.letters[i])
 		rl.DrawText(
 			label,
@@ -443,6 +484,7 @@ main :: proc() {
 		selector_handle_arrow_input(&selector, grid)
 		selector_handle_mouse_input(&selector, grid)
 		selector_buffer_handle_input(&selector_buffer)
+		toggle_selector_direction(&selector)
 		selector_submit_letters(
 			&grid,
 			selector,
