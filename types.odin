@@ -21,6 +21,10 @@ BASE_HUD_VALUE_OFFSET :: 18
 GRID_COLS :: 7
 GRID_ROWS :: 7
 LETTER_COUNT :: 26
+WORDLE_WORD_LEN :: 5
+WORDLE_SOLUTION_COUNT :: 10
+BASE_WORDLE_BOARD_Y :: 125
+BASE_WORDLE_LEVEL_Y :: 92
 
 Tile :: struct {
 	row: i32,
@@ -89,10 +93,30 @@ GameMode :: enum {
 	Wordle,
 }
 
+WordleFeedback :: enum {
+	Empty,
+	Miss,
+	Present,
+	Correct,
+}
+
+WordleGuess :: struct {
+	letters:  [WORDLE_WORD_LEN]rune,
+	feedback: [WORDLE_WORD_LEN]WordleFeedback,
+}
+
+WordleState :: struct {
+	guesses:       [dynamic]WordleGuess,
+	current_guess: [WORDLE_WORD_LEN]rune,
+	current_count: i32,
+	level:         u32,
+}
+
 GameState :: struct {
 	grid:            Grid,
 	selector:        Selector,
 	selector_buffer: SelectorBuffer,
+	wordle:          WordleState,
 	frag_counts:     Frags,
 	rune_counts:     Runes,
 	show_frags:      bool,

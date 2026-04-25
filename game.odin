@@ -1,5 +1,20 @@
 package main
 
+import rl "vendor:raylib"
+
+WORDLE_SOLUTIONS := [WORDLE_SOLUTION_COUNT][WORDLE_WORD_LEN]rune {
+	{'C', 'R', 'A', 'N', 'E'},
+	{'S', 'L', 'A', 'T', 'E'},
+	{'B', 'R', 'I', 'C', 'K'},
+	{'P', 'L', 'A', 'N', 'T'},
+	{'G', 'H', 'O', 'S', 'T'},
+	{'F', 'L', 'A', 'M', 'E'},
+	{'S', 'T', 'O', 'R', 'M'},
+	{'C', 'H', 'A', 'R', 'M'},
+	{'B', 'L', 'O', 'O', 'M'},
+	{'T', 'R', 'A', 'C', 'E'},
+}
+
 grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
 	grid_width := GRID_COLS * BASE_CELL_SIZE + (GRID_COLS - 1) * BASE_GAP
 	grid_height := GRID_ROWS * BASE_CELL_SIZE + (GRID_ROWS - 1) * BASE_GAP
@@ -38,6 +53,7 @@ game_state_new :: proc(screen_width: i32, screen_height: i32) -> GameState {
 	return GameState {
 		grid = grid,
 		selector = selector_new(grid),
+		wordle = wordle_state_new(),
 		show_frags = true,
 		game_mode = .Cross,
 		screen_width = screen_width,
@@ -100,6 +116,109 @@ game_increment_frags_and_runes :: proc(state: ^GameState) {
 	for i in 0 ..< LETTER_COUNT {
 		state.frag_counts[i] += 10
 		state.rune_counts[i] += 1
+	}
+}
+
+wordle_state_new :: proc() -> WordleState {
+	return WordleState {
+		guesses = make([dynamic]WordleGuess, 0, 32),
+	}
+}
+
+wordle_solution_index :: proc(wordle: WordleState) -> i32 {
+	return i32(wordle.level % WORDLE_SOLUTION_COUNT)
+}
+
+wordle_current_solution :: proc(wordle: WordleState) -> [WORDLE_WORD_LEN]rune {
+	return WORDLE_SOLUTIONS[wordle_solution_index(wordle)]
+}
+
+wordle_push_letter :: proc(wordle: ^WordleState, letter: rune) {
+	if wordle.current_count < WORDLE_WORD_LEN {
+		wordle.current_guess[wordle.current_count] = letter
+		wordle.current_count += 1
+	}
+}
+
+wordle_pop_letter :: proc(wordle: ^WordleState) {
+	if wordle.current_count > 0 {
+		wordle.current_count -= 1
+		wordle.current_guess[wordle.current_count] = 0
+	}
+}
+
+wordle_clear_current_guess :: proc(wordle: ^WordleState) {
+	for i in 0 ..< WORDLE_WORD_LEN {
+		wordle.current_guess[i] = 0
+	}
+	wordle.current_count = 0
+}
+
+wordle_evaluate_guess :: proc(guess: [WORDLE_WORD_LEN]rune, solution: [WORDLE_WORD_LEN]rune) -> WordleGuess {
+	result := WordleGuess {
+		letters = guess,
+	}
+	remaining_counts := Frags{}
+
+	for i in 0 ..< WORDLE_WORD_LEN {
+		if guess[i] == solution[i] {
+			result.feedback[i] = .Correct
+		} else {
+			solution_index := i32(solution[i] - 'A')
+			if solution_index >= 0 && solution_index < LETTER_COUNT {
+				remaining_counts[solution_index] += 1
+			}
+		}
+	}
+
+	for i in 0 ..< WORDLE_WORD_LEN {
+		if result.feedback[i] == .Correct do continue
+
+		guess_index := i32(guess[i] - 'A')
+		if guess_index >= 0 && guess_index < LETTER_COUNT && remaining_counts[guess_index] > 0 {
+			result.feedback[i] = .Present
+			remaining_counts[guess_index] -= 1
+		} else {
+			result.feedback[i] = .Miss
+		}
+	}
+
+	return result
+}
+
+wordle_guess_is_solution :: proc(guess: WordleGuess) -> bool {
+	for i in 0 ..< WORDLE_WORD_LEN {
+		if guess.feedback[i] != .Correct do return false
+	}
+	return true
+}
+
+wordle_reward_fragment :: proc(state: ^GameState, solution: [WORDLE_WORD_LEN]rune) {
+	reward_index := rl.GetRandomValue(0, WORDLE_WORD_LEN - 1)
+	letter := solution[reward_index]
+	frag_index := i32(letter - 'A')
+	if frag_index >= 0 && frag_index < LETTER_COUNT {
+		state.frag_counts[frag_index] += 1
+	}
+}
+
+wordle_advance_level :: proc(wordle: ^WordleState) {
+	clear(&wordle.guesses)
+	wordle_clear_current_guess(wordle)
+	wordle.level += 1
+}
+
+wordle_submit_guess :: proc(state: ^GameState) {
+	if state.wordle.current_count < WORDLE_WORD_LEN do return
+
+	solution := wordle_current_solution(state.wordle)
+	guess := wordle_evaluate_guess(state.wordle.current_guess, solution)
+	append(&state.wordle.guesses, guess)
+	wordle_clear_current_guess(&state.wordle)
+
+	if wordle_guess_is_solution(guess) {
+		wordle_reward_fragment(state, solution)
+		wordle_advance_level(&state.wordle)
 	}
 }
 

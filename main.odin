@@ -23,6 +23,9 @@ main :: proc() {
 			handle_submit_input(&state)
 			handle_inventory_debug_input(&state)
 			handle_view_toggle_input(&state)
+		} else if state.game_mode == .Wordle {
+			handle_wordle_guess_input(&state)
+			handle_wordle_submit_input(&state)
 		}
 
 		rl.BeginDrawing()
@@ -37,6 +40,8 @@ main :: proc() {
 			render_selector_letter(state.grid, state.selector, state.selector_buffer)
 			if state.show_frags do render_frags(state.screen_width, state.screen_height, state.frag_counts)
 			else do render_runes(state.screen_width, state.screen_height, state.rune_counts)
+		} else if state.game_mode == .Wordle {
+			render_wordle(state.screen_width, state.screen_height, state.wordle)
 		}
 	}
 }

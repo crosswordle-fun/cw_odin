@@ -72,3 +72,29 @@ handle_view_toggle_input :: proc(state: ^GameState) {
 handle_game_mode_toggle_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do game_toggle_mode(state)
 }
+
+handle_wordle_guess_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
+		wordle_pop_letter(&state.wordle)
+		return
+	}
+
+	for {
+		ch := rl.GetCharPressed()
+		if ch == 0 {
+			break
+		}
+
+		if ch >= 'a' && ch <= 'z' {
+			ch -= 'a' - 'A'
+		}
+
+		if ch >= 'A' && ch <= 'Z' {
+			wordle_push_letter(&state.wordle, rune(ch))
+		}
+	}
+}
+
+handle_wordle_submit_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) do wordle_submit_guess(state)
+}

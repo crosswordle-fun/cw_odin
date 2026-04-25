@@ -178,3 +178,103 @@ render_frags :: proc(screen_width: i32, screen_height: i32, frag_counts: Frags) 
 render_runes :: proc(screen_width: i32, screen_height: i32, rune_counts: Runes) {
 	render_inventory_counts(screen_width, screen_height, rune_counts, rl.PURPLE)
 }
+
+wordle_feedback_color :: proc(feedback: WordleFeedback) -> rl.Color {
+	switch feedback {
+	case .Correct:
+		return rl.GREEN
+	case .Present:
+		return rl.GOLD
+	case .Miss:
+		return rl.GRAY
+	case .Empty:
+		return rl.DARKGRAY
+	case:
+		return rl.DARKGRAY
+	}
+}
+
+render_wordle_tile :: proc(
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	feedback: WordleFeedback,
+	font_size: i32,
+) {
+	tile_color := wordle_feedback_color(feedback)
+	rl.DrawRectangle(x, y, size, size, tile_color)
+
+	if letter != 0 {
+		label := fmt.caprintf("%c", letter)
+		text_width := rl.MeasureText(label, font_size)
+		text_x := x + (size - text_width) / 2
+		text_y := y + (size - font_size) / 2
+		rl.DrawText(label, text_x, text_y, font_size, rl.WHITE)
+	}
+}
+
+render_wordle_guess_row :: proc(
+	guess: WordleGuess,
+	x: i32,
+	y: i32,
+	cell_size: i32,
+	gap: i32,
+	font_size: i32,
+) {
+	for col in 0 ..< WORDLE_WORD_LEN {
+		tile_x := x + i32(col) * (cell_size + gap)
+		render_wordle_tile(tile_x, y, cell_size, guess.letters[col], guess.feedback[col], font_size)
+	}
+}
+
+render_wordle_current_row :: proc(
+	wordle: WordleState,
+	x: i32,
+	y: i32,
+	cell_size: i32,
+	gap: i32,
+	font_size: i32,
+) {
+	for col in 0 ..< WORDLE_WORD_LEN {
+		tile_x := x + i32(col) * (cell_size + gap)
+		render_wordle_tile(tile_x, y, cell_size, wordle.current_guess[col], .Empty, font_size)
+	}
+}
+
+render_wordle_level :: proc(screen_width: i32, screen_height: i32, wordle: WordleState) {
+	scale := screen_scale(screen_width, screen_height)
+	font_size := scaled_i32(BASE_HUD_FONT_SIZE, scale)
+	y := scaled_i32(BASE_WORDLE_LEVEL_Y, scale)
+	level_label := fmt.caprintf("Level %d", wordle.level + 1)
+	label_width := rl.MeasureText(level_label, font_size)
+	rl.DrawText(level_label, (screen_width - label_width) / 2, y, font_size, rl.WHITE)
+}
+
+render_wordle :: proc(screen_width: i32, screen_height: i32, wordle: WordleState) {
+	scale := screen_scale(screen_width, screen_height)
+	cell_size := scaled_i32(BASE_CELL_SIZE, scale)
+	gap := scaled_i32(BASE_GAP, scale)
+	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, scale)
+	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, scale)
+	row_step := cell_size + gap
+	board_width := WORDLE_WORD_LEN * cell_size + (WORDLE_WORD_LEN - 1) * gap
+	start_x := (screen_width - board_width) / 2
+	visible_rows := (screen_height - start_y - row_step) / row_step
+	if visible_rows < 1 do visible_rows = 1
+
+	total_rows := i32(len(wordle.guesses)) + 1
+	first_row := total_rows - visible_rows
+	if first_row < 0 do first_row = 0
+
+	draw_row: i32 = 0
+	for guess_index in first_row ..< i32(len(wordle.guesses)) {
+		y := start_y + draw_row * row_step
+		render_wordle_guess_row(wordle.guesses[guess_index], start_x, y, cell_size, gap, font_size)
+		draw_row += 1
+	}
+
+	y := start_y + draw_row * row_step
+	render_wordle_current_row(wordle, start_x, y, cell_size, gap, font_size)
+	render_wordle_level(screen_width, screen_height, wordle)
+}
