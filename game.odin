@@ -98,7 +98,7 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 		selector = selector_new(grid),
 		wordle = wordle_state_new(),
 		show_frags = true,
-		game_mode = .Cross,
+		view = .Cross,
 		screen_width = virtual_width,
 		screen_height = virtual_height,
 	}
@@ -144,26 +144,18 @@ game_toggle_frag_rune_view :: proc(state: ^GameState) {
 	state.show_frags = !state.show_frags
 }
 
-game_toggle_mode :: proc(state: ^GameState) {
-	switch state.game_mode {
+game_set_view :: proc(state: ^GameState, view: GameView) {
+	if state.view == view do return
+
+	switch state.view {
 	case .Cross:
-		state.game_mode = .Wordle
-	case .Wordle:
-		state.game_mode = .Cross
-	}
-}
-
-cross_toggle_substate :: proc(state: ^GameState) {
-	if state.game_mode != .Cross do return
-
-	switch state.cross_substate {
-	case .Game:
-		state.cross_substate = .Crafting
 		selector_buffer_clear(&state.selector_buffer)
 	case .Crafting:
-		state.cross_substate = .Game
 		crafting_clear_selection(&state.crafting)
+	case .Wordle:
 	}
+
+	state.view = view
 }
 
 game_increment_frags_and_runes :: proc(state: ^GameState) {

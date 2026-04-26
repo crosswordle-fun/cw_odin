@@ -226,39 +226,51 @@ build_title_word :: proc(
 	push_text(buffer, label, x, y, font_size, text_color)
 }
 
-build_title :: proc(buffer: ^RenderBuffer, ctx: RenderContext, game_mode: GameMode) {
+build_title :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameView) {
 	font_size := scaled_i32(BASE_TITLE_FONT_SIZE, ctx.scale)
 	title_gap := scaled_i32(BASE_TITLE_GAP, ctx.scale)
 	padding_x := scaled_i32(BASE_TITLE_PADDING_X, ctx.scale)
 	padding_y := scaled_i32(BASE_TITLE_PADDING_Y, ctx.scale)
 	y := scaled_i32(BASE_TITLE_Y, ctx.scale)
 
-	cross_label: cstring = "Cross"
 	wordle_label: cstring = "Wordle"
-	cross_width := rl.MeasureText(cross_label, font_size)
+	cross_label: cstring = "Cross"
+	crafting_label: cstring = "Crafting"
 	wordle_width := rl.MeasureText(wordle_label, font_size)
-	total_width := cross_width + title_gap + wordle_width
+	cross_width := rl.MeasureText(cross_label, font_size)
+	crafting_width := rl.MeasureText(crafting_label, font_size)
+	total_width := wordle_width + title_gap + cross_width + title_gap + crafting_width
 	start_x := (ctx.screen_width - total_width) / 2
 
 	build_title_word(
 		buffer,
-		cross_label,
+		wordle_label,
 		start_x,
 		y,
 		font_size,
 		padding_x,
 		padding_y,
-		game_mode == .Cross,
+		view == .Wordle,
 	)
 	build_title_word(
 		buffer,
-		wordle_label,
-		start_x + cross_width + title_gap,
+		cross_label,
+		start_x + wordle_width + title_gap,
 		y,
 		font_size,
 		padding_x,
 		padding_y,
-		game_mode == .Wordle,
+		view == .Cross,
+	)
+	build_title_word(
+		buffer,
+		crafting_label,
+		start_x + wordle_width + title_gap + cross_width + title_gap,
+		y,
+		font_size,
+		padding_x,
+		padding_y,
+		view == .Crafting,
 	)
 }
 
@@ -271,7 +283,7 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32) {
 }
 
 build_global_hud :: proc(frame: ^RenderFrame, ctx: RenderContext, state: GameState) {
-	build_title(&frame.ui, ctx, state.game_mode)
+	build_title(&frame.ui, ctx, state.view)
 	build_exp_hud(&frame.ui, ctx, state.exp)
 }
 
@@ -533,15 +545,6 @@ build_crafting_scene :: proc(frame: ^RenderFrame, ctx: RenderContext, state: Gam
 		)
 	}
 	build_inventory(&frame.ui, ctx, state.frag_counts, state.rune_counts, state.show_frags)
-}
-
-build_cross_scene :: proc(frame: ^RenderFrame, ctx: RenderContext, state: GameState) {
-	switch state.cross_substate {
-	case .Game:
-		build_cross_board_scene(frame, ctx, state)
-	case .Crafting:
-		build_crafting_scene(frame, ctx, state)
-	}
 }
 
 wordle_feedback_color :: proc(feedback: WordleFeedback) -> rl.Color {
@@ -839,22 +842,5 @@ build_wordle_scene :: proc(frame: ^RenderFrame, ctx: RenderContext, wordle: Word
 			build_wordle_win(frame, ctx, wordle)
 		}
 	}
-}
-
-build_render_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: GameState) {
-	build_global_hud(frame, ctx, state)
-
-	switch state.game_mode {
-	case .Cross:
-		build_cross_scene(frame, ctx, state)
-	case .Wordle:
-		build_wordle_scene(frame, ctx, state.wordle)
-	}
-}
-
-render_game :: proc(frame: ^RenderFrame, state: GameState) {
-	render_frame_clear(frame)
-	ctx := render_context_new(state.screen_width, state.screen_height)
-	build_render_frame(frame, ctx, state)
 }
 

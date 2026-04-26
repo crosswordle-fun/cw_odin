@@ -107,13 +107,9 @@ SelectorBuffer :: struct {
 	count:   i32,
 }
 
-GameMode :: enum {
-	Cross,
+GameView :: enum {
 	Wordle,
-}
-
-CrossSubstate :: enum {
-	Game,
+	Cross,
 	Crafting,
 }
 
@@ -178,8 +174,7 @@ GameState :: struct {
 	exp:              u32,
 	cross_reward_exp: u32,
 	show_frags:       bool,
-	game_mode:        GameMode,
-	cross_substate:   CrossSubstate,
+	view:             GameView,
 	crafting:         CraftingState,
 	screen_width:     i32,
 	screen_height:    i32,

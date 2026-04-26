@@ -48,12 +48,7 @@ Inventory is letter-specific. The player tracks counts for A-Z fragments or A-Z 
 
 ### 5.1 Cross Mode
 
-Cross mode is the board and crafting side of the game. It has two substates:
-
-- **Game**: place fragments or runes on a 7x7 board.
-- **Crafting**: convert fragments into runes.
-
-The player switches between the two substates with `1`.
+Cross mode is the board side of the game where the player places fragments or runes on a 7x7 board.
 
 ### 5.2 Wordle Mode
 
@@ -166,7 +161,7 @@ After a successful Cross placement, the most recent Cross reward is shown as `+N
 
 ## 7. Crafting Design
 
-Crafting is a Cross substate that lets the player spend fragments to create runes.
+Crafting is a standalone view that lets the player spend fragments to create runes.
 
 ### 7.1 Crafting Input
 
@@ -348,7 +343,9 @@ EXP currently has no spend or level-up behavior. It functions as a cumulative sc
 
 | Input | Action |
 | --- | --- |
-| `Tab` | Toggle between Cross and Wordle modes |
+| `1` | Switch to Wordle view |
+| `2` | Switch to Cross view |
+| `3` | Switch to Crafting view |
 | Window resize | Recalculate layout scale and positions |
 
 ### 11.2 Cross Game Controls
@@ -362,7 +359,6 @@ EXP currently has no spend or level-up behavior. It functions as a cumulative sc
 | `Backspace` | Remove last buffered letter |
 | `Enter` | Submit placement buffer |
 | `Left Shift` / `Right Shift` | Toggle fragment/rune inventory and placement layer |
-| `1` | Toggle Cross Game/Crafting substate |
 | `0` | Debug: add 10 fragments and 1 rune for every letter |
 
 ### 11.3 Cross Crafting Controls
@@ -373,7 +369,6 @@ EXP currently has no spend or level-up behavior. It functions as a cumulative sc
 | `Backspace` | Remove last selected fragment |
 | `Enter` | Submit crafting recipe |
 | `Left Shift` / `Right Shift` | Toggle fragment/rune inventory display |
-| `1` | Return to Cross Game substate |
 | `0` | Debug: add 10 fragments and 1 rune for every letter |
 
 ### 11.4 Wordle Controls
@@ -429,8 +424,7 @@ The central `GameState` owns all gameplay state:
 - Total EXP.
 - Latest Cross reward EXP.
 - Active fragment/rune view.
-- Active game mode.
-- Active Cross substate.
+- Active view.
 - Crafting state.
 - Current screen dimensions.
 
@@ -448,7 +442,7 @@ On launch:
 
 - A resizable 1280x720 window opens.
 - Cross mode starts active.
-- Cross substate starts in Game.
+- Cross view starts active.
 - The grid is empty.
 - The selector starts in the center of the board.
 - Fragment and rune inventories start empty.
@@ -458,10 +452,10 @@ On launch:
 
 ### 14.2 Intended Progression Loop
 
-1. Enter Wordle mode with `Tab`.
+1. Enter Wordle view with `1`.
 2. Solve a Wordle level.
 3. Gain one fragment from the solution and 100 EXP.
-4. Return to Cross mode with `Tab`.
+4. Return to Cross view with `2`.
 5. Place earned fragments on the board for 500 EXP each, or save them for crafting.
 6. Craft runes from fragment sets.
 7. Place runes over matching fragments for 1000 EXP each.
@@ -494,8 +488,8 @@ The current implementation intentionally or practically omits several systems:
 The main loop:
 
 1. Updates screen size and layout.
-2. Handles global mode toggle input.
-3. Routes input based on active game mode and substate.
+2. Handles global view selection input.
+3. Routes input based on the active view.
 4. Builds and renders the current frame.
 
 Input is gated so each mode only processes relevant controls.
@@ -536,4 +530,3 @@ These are natural extensions of the current design:
 - Add a menu/help overlay listing controls.
 - Add mouse controls for crafting and Wordle.
 - Add configurable solution and allowed-word lists.
-

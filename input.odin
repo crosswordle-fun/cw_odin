@@ -12,34 +12,21 @@ read_pressed_letter :: proc() -> (letter: rune, ok: bool) {
 	}
 }
 
-handle_input :: proc(state: ^GameState) {
-	handle_game_mode_toggle_input(state)
-
-	switch state.game_mode {
-	case .Cross:
-		handle_cross_input(state)
-	case .Wordle:
-		handle_wordle_input(state)
-	}
-}
-
 handle_cross_input :: proc(state: ^GameState) {
 	handle_inventory_debug_input(state)
-	handle_cross_substate_toggle_input(state)
+	handle_arrow_key_input(state)
+	handle_mouse_selection_input(state)
+	handle_selector_buffer_input(state)
+	handle_selector_direction_input(state)
+	handle_submit_input(state)
+	handle_view_toggle_input(state)
+}
 
-	switch state.cross_substate {
-	case .Game:
-		handle_arrow_key_input(state)
-		handle_mouse_selection_input(state)
-		handle_selector_buffer_input(state)
-		handle_selector_direction_input(state)
-		handle_submit_input(state)
-		handle_view_toggle_input(state)
-	case .Crafting:
-		handle_crafting_selection_input(state)
-		handle_crafting_submit_input(state)
-		handle_view_toggle_input(state)
-	}
+handle_crafting_input :: proc(state: ^GameState) {
+	handle_inventory_debug_input(state)
+	handle_crafting_selection_input(state)
+	handle_crafting_submit_input(state)
+	handle_view_toggle_input(state)
 }
 
 handle_wordle_input :: proc(state: ^GameState) {
@@ -124,18 +111,16 @@ handle_inventory_debug_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.ZERO) do game_increment_frags_and_runes(state)
 }
 
-handle_cross_substate_toggle_input :: proc(state: ^GameState) {
-	if rl.IsKeyPressed(rl.KeyboardKey.ONE) do cross_toggle_substate(state)
-}
-
 handle_view_toggle_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.LEFT_SHIFT) || rl.IsKeyPressed(rl.KeyboardKey.RIGHT_SHIFT) {
 		game_toggle_frag_rune_view(state)
 	}
 }
 
-handle_game_mode_toggle_input :: proc(state: ^GameState) {
-	if rl.IsKeyPressed(rl.KeyboardKey.TAB) do game_toggle_mode(state)
+handle_view_selection_input :: proc(state: ^GameState) {
+	if rl.IsKeyPressed(rl.KeyboardKey.ONE) do game_set_view(state, .Wordle)
+	if rl.IsKeyPressed(rl.KeyboardKey.TWO) do game_set_view(state, .Cross)
+	if rl.IsKeyPressed(rl.KeyboardKey.THREE) do game_set_view(state, .Crafting)
 }
 
 handle_crafting_selection_input :: proc(state: ^GameState) {

@@ -19,8 +19,28 @@ main :: proc() {
 
 	for !rl.WindowShouldClose() {
 		game_update_screen_size(&state, VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT)
-		handle_input(&state)
-		render_game(&render_frame, state)
+		handle_view_selection_input(&state)
+
+		switch state.view {
+		case .Wordle:
+			handle_wordle_input(&state)
+		case .Cross:
+			handle_cross_input(&state)
+		case .Crafting:
+			handle_crafting_input(&state)
+		}
+
+		render_frame_clear(&render_frame)
+		ctx := render_context_new(state.screen_width, state.screen_height)
+		build_global_hud(&render_frame, ctx, state)
+		switch state.view {
+		case .Wordle:
+			build_wordle_scene(&render_frame, ctx, state.wordle)
+		case .Cross:
+			build_cross_board_scene(&render_frame, ctx, state)
+		case .Crafting:
+			build_crafting_scene(&render_frame, ctx, state)
+		}
 
 		rl.BeginTextureMode(render_target)
 		rl.ClearBackground(rl.Color{20, 20, 24, 255})
@@ -48,4 +68,3 @@ main :: proc() {
 		rl.EndDrawing()
 	}
 }
-
