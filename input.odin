@@ -1,5 +1,6 @@
 package main
 
+import "core:math"
 import rl "vendor:raylib"
 
 handle_arrow_key_input :: proc(state: ^GameState) {
@@ -13,6 +14,23 @@ handle_mouse_selection_input :: proc(state: ^GameState) {
 	if !rl.IsMouseButtonPressed(rl.MouseButton.LEFT) do return
 
 	mouse_pos := rl.GetMousePosition()
+	win_w := f32(rl.GetScreenWidth())
+	win_h := f32(rl.GetScreenHeight())
+	scale := math.min(win_w / f32(VIRTUAL_SCREEN_WIDTH), win_h / f32(VIRTUAL_SCREEN_HEIGHT))
+	dst_w := f32(VIRTUAL_SCREEN_WIDTH) * scale
+	dst_h := f32(VIRTUAL_SCREEN_HEIGHT) * scale
+	dst_x := (win_w - dst_w) * 0.5
+	dst_y := (win_h - dst_h) * 0.5
+
+	if mouse_pos.x < dst_x || mouse_pos.y < dst_y {
+		return
+	}
+	if mouse_pos.x >= dst_x + dst_w || mouse_pos.y >= dst_y + dst_h {
+		return
+	}
+
+	mouse_pos.x = (mouse_pos.x - dst_x) / scale
+	mouse_pos.y = (mouse_pos.y - dst_y) / scale
 	grid_right := state.grid.offset_x + grid_pixel_width(state.grid)
 	grid_bottom := state.grid.offset_y + grid_pixel_height(state.grid)
 

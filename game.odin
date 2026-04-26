@@ -2,7 +2,7 @@ package main
 
 import rl "vendor:raylib"
 
-grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
+grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
 	grid_width := GRID_COLS * BASE_CELL_SIZE + (GRID_COLS - 1) * BASE_GAP
 	grid_height := GRID_ROWS * BASE_CELL_SIZE + (GRID_ROWS - 1) * BASE_GAP
 
@@ -16,10 +16,10 @@ grid_new :: proc(screen_width: i32, screen_height: i32) -> Grid {
 		rows          = GRID_ROWS,
 		cell_size     = BASE_CELL_SIZE,
 		gap           = BASE_GAP,
-		screen_width  = screen_width,
-		screen_height = screen_height,
-		offset_x      = i32((screen_width - i32(grid_width)) / 2),
-		offset_y      = i32((screen_height - i32(grid_height)) / 2),
+		screen_width  = virtual_width,
+		screen_height = virtual_height,
+		offset_x      = i32((virtual_width - i32(grid_width)) / 2),
+		offset_y      = i32((virtual_height - i32(grid_height)) / 2),
 	}
 
 	i := 0
@@ -39,23 +39,21 @@ selector_new :: proc(grid: Grid) -> Selector {
 	return Selector{row = grid.rows / 2, col = grid.cols / 2}
 }
 
-game_state_new :: proc(screen_width: i32, screen_height: i32) -> GameState {
-	grid := grid_new(screen_width, screen_height)
+game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
+	grid := grid_new(virtual_width, virtual_height)
 	return GameState {
 		grid = grid,
 		selector = selector_new(grid),
 		wordle = wordle_state_new(),
 		show_frags = true,
 		game_mode = .Cross,
-		screen_width = screen_width,
-		screen_height = screen_height,
+		screen_width = virtual_width,
+		screen_height = virtual_height,
 	}
 }
 
-game_update_screen_size :: proc(state: ^GameState, screen_width: i32, screen_height: i32) {
-	state.screen_width = screen_width
-	state.screen_height = screen_height
-	grid_update_layout(&state.grid, screen_width, screen_height)
+game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_height: i32) {
+	grid_update_layout(&state.grid, virtual_width, virtual_height)
 }
 
 selector_move :: proc(selector: ^Selector, row_delta: i32, col_delta: i32, grid: Grid) {

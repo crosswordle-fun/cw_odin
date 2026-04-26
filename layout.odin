@@ -7,8 +7,8 @@ scaled_i32 :: proc(value: i32, scale: f32) -> i32 {
 }
 
 screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
-	scale_x := f32(screen_width) / f32(BASE_SCREEN_WIDTH)
-	scale_y := f32(screen_height) / f32(BASE_SCREEN_HEIGHT)
+	scale_x := f32(screen_width) / f32(VIRTUAL_SCREEN_WIDTH)
+	scale_y := f32(screen_height) / f32(VIRTUAL_SCREEN_HEIGHT)
 	scale := scale_x
 	if scale_y < scale do scale = scale_y
 	return scale

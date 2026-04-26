@@ -37,9 +37,7 @@ RenderContext :: struct {
 }
 
 render_buffer_new :: proc() -> RenderBuffer {
-	return RenderBuffer {
-		commands = make([dynamic]RenderCommand, 0, RENDER_BUFFER_CAPACITY),
-	}
+	return RenderBuffer{commands = make([dynamic]RenderCommand, 0, RENDER_BUFFER_CAPACITY)}
 }
 
 render_frame_new :: proc() -> RenderFrame {
@@ -78,7 +76,14 @@ render_buffer_push :: proc(buffer: ^RenderBuffer, command: RenderCommand) {
 	append(&buffer.commands, command)
 }
 
-push_rect :: proc(buffer: ^RenderBuffer, x: i32, y: i32, width: i32, height: i32, color: rl.Color) {
+push_rect :: proc(
+	buffer: ^RenderBuffer,
+	x: i32,
+	y: i32,
+	width: i32,
+	height: i32,
+	color: rl.Color,
+) {
 	render_buffer_push(
 		buffer,
 		RenderCommand {
@@ -109,7 +114,14 @@ push_rect_lines :: proc(
 	)
 }
 
-push_text :: proc(buffer: ^RenderBuffer, label: cstring, x: i32, y: i32, font_size: i32, color: rl.Color) {
+push_text :: proc(
+	buffer: ^RenderBuffer,
+	label: cstring,
+	x: i32,
+	y: i32,
+	font_size: i32,
+	color: rl.Color,
+) {
 	render_buffer_push(
 		buffer,
 		RenderCommand {
@@ -169,7 +181,13 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 		case .Rect_Lines:
 			rl.DrawRectangleLinesEx(command.rect, command.thickness, command.color)
 		case .Text:
-			rl.DrawText(command.text, i32(command.rect.x), i32(command.rect.y), command.font_size, command.color)
+			rl.DrawText(
+				command.text,
+				i32(command.rect.x),
+				i32(command.rect.y),
+				command.font_size,
+				command.color,
+			)
 		}
 	}
 }
@@ -222,7 +240,16 @@ build_title :: proc(buffer: ^RenderBuffer, ctx: RenderContext, game_mode: GameMo
 	total_width := cross_width + title_gap + wordle_width
 	start_x := (ctx.screen_width - total_width) / 2
 
-	build_title_word(buffer, cross_label, start_x, y, font_size, padding_x, padding_y, game_mode == .Cross)
+	build_title_word(
+		buffer,
+		cross_label,
+		start_x,
+		y,
+		font_size,
+		padding_x,
+		padding_y,
+		game_mode == .Cross,
+	)
 	build_title_word(
 		buffer,
 		wordle_label,
@@ -267,7 +294,15 @@ build_grid :: proc(buffer: ^RenderBuffer, grid: Grid) {
 			rune_size := grid.cell_size - rune_padding * 2
 			rune_x := x + rune_padding
 			rune_y := y + rune_padding
-			push_letter_tile(buffer, rune_x, rune_y, rune_size, grid.runes[i], rl.PURPLE, font_size)
+			push_letter_tile(
+				buffer,
+				rune_x,
+				rune_y,
+				rune_size,
+				grid.runes[i],
+				rl.PURPLE,
+				font_size,
+			)
 		}
 	}
 }
@@ -354,7 +389,13 @@ build_inventory_counts :: proc(
 	}
 }
 
-build_inventory :: proc(buffer: ^RenderBuffer, ctx: RenderContext, frag_counts: Frags, rune_counts: Runes, show_frags: bool) {
+build_inventory :: proc(
+	buffer: ^RenderBuffer,
+	ctx: RenderContext,
+	frag_counts: Frags,
+	rune_counts: Runes,
+	show_frags: bool,
+) {
 	if show_frags do build_inventory_counts(buffer, ctx, frag_counts, rl.SKYBLUE)
 	else do build_inventory_counts(buffer, ctx, rune_counts, rl.PURPLE)
 }
@@ -377,7 +418,13 @@ build_cross_exp_reward :: proc(buffer: ^RenderBuffer, grid: Grid, reward_exp: u3
 
 build_cross_board_scene :: proc(frame: ^RenderFrame, ctx: RenderContext, state: GameState) {
 	build_grid(&frame.world, state.grid)
-	build_selector(&frame.overlay, state.grid, state.selector, state.selector_buffer, state.show_frags)
+	build_selector(
+		&frame.overlay,
+		state.grid,
+		state.selector,
+		state.selector_buffer,
+		state.show_frags,
+	)
 	build_selector_letters(&frame.overlay, state.grid, state.selector, state.selector_buffer)
 	build_cross_exp_reward(&frame.ui, state.grid, state.cross_reward_exp)
 	build_inventory(&frame.ui, ctx, state.frag_counts, state.rune_counts, state.show_frags)
@@ -439,10 +486,32 @@ build_crafting_scene :: proc(frame: ^RenderFrame, ctx: RenderContext, state: Gam
 		scaled_i32(BASE_TITLE_FONT_SIZE, ctx.scale),
 		rl.WHITE,
 	)
-	push_centered_text(&frame.ui, "Fragments", ctx.screen_width, selected_label_y, hud_font_size, rl.SKYBLUE)
-	build_crafting_selected(&frame.world, state.crafting, start_x, selected_y, cell_size, gap, font_size)
+	push_centered_text(
+		&frame.ui,
+		"Fragments",
+		ctx.screen_width,
+		selected_label_y,
+		hud_font_size,
+		rl.SKYBLUE,
+	)
+	build_crafting_selected(
+		&frame.world,
+		state.crafting,
+		start_x,
+		selected_y,
+		cell_size,
+		gap,
+		font_size,
+	)
 	build_crafting_recipe_status(&frame.ui, ctx, status_y, hud_font_size, state.crafting)
-	push_centered_text(&frame.ui, "Latest Rune", ctx.screen_width, output_label_y, hud_font_size, rl.PURPLE)
+	push_centered_text(
+		&frame.ui,
+		"Latest Rune",
+		ctx.screen_width,
+		output_label_y,
+		hud_font_size,
+		rl.PURPLE,
+	)
 	push_letter_tile(
 		&frame.world,
 		(ctx.screen_width - cell_size) / 2,
@@ -454,7 +523,14 @@ build_crafting_scene :: proc(frame: ^RenderFrame, ctx: RenderContext, state: Gam
 	)
 	if state.crafting.crafted_rune != 0 {
 		reward_detail := fmt.caprintf("+%d EXP", RUNE_CRAFT_EXP_REWARD)
-		push_centered_text(&frame.ui, reward_detail, ctx.screen_width, output_exp_y, hud_font_size, rl.GOLD)
+		push_centered_text(
+			&frame.ui,
+			reward_detail,
+			ctx.screen_width,
+			output_exp_y,
+			hud_font_size,
+			rl.GOLD,
+		)
 	}
 	build_inventory(&frame.ui, ctx, state.frag_counts, state.rune_counts, state.show_frags)
 }
@@ -506,7 +582,15 @@ build_wordle_guess_row :: proc(
 ) {
 	for col in 0 ..< WORDLE_WORD_LEN {
 		tile_x := x + i32(col) * (cell_size + gap)
-		build_wordle_tile(buffer, tile_x, y, cell_size, guess.letters[col], guess.feedback[col], font_size)
+		build_wordle_tile(
+			buffer,
+			tile_x,
+			y,
+			cell_size,
+			guess.letters[col],
+			guess.feedback[col],
+			font_size,
+		)
 	}
 }
 
@@ -625,7 +709,14 @@ build_wordle_win :: proc(frame: ^RenderFrame, ctx: RenderContext, wordle: Wordle
 	reward_detail_y := reward_y + cell_size + scaled_i32(14, ctx.scale)
 
 	build_wordle_level(&frame.ui, ctx, wordle.level)
-	push_centered_text(&frame.ui, "Congratulations!", ctx.screen_width, title_y, title_font_size, rl.WHITE)
+	push_centered_text(
+		&frame.ui,
+		"Congratulations!",
+		ctx.screen_width,
+		title_y,
+		title_font_size,
+		rl.WHITE,
+	)
 	push_centered_text(
 		&frame.ui,
 		"Puzzle solved. Your reward is ready.",
@@ -634,8 +725,23 @@ build_wordle_win :: proc(frame: ^RenderFrame, ctx: RenderContext, wordle: Wordle
 		subtitle_font_size,
 		rl.LIGHTGRAY,
 	)
-	build_wordle_win_solution(&frame.world, wordle.win_solution, start_x, start_y, cell_size, gap, font_size)
-	push_centered_text(&frame.ui, "Rewards", ctx.screen_width, reward_label_y, subtitle_font_size, rl.SKYBLUE)
+	build_wordle_win_solution(
+		&frame.world,
+		wordle.win_solution,
+		start_x,
+		start_y,
+		cell_size,
+		gap,
+		font_size,
+	)
+	push_centered_text(
+		&frame.ui,
+		"Rewards",
+		ctx.screen_width,
+		reward_label_y,
+		subtitle_font_size,
+		rl.SKYBLUE,
+	)
 	push_letter_tile(
 		&frame.world,
 		(ctx.screen_width - cell_size) / 2,
@@ -646,7 +752,14 @@ build_wordle_win :: proc(frame: ^RenderFrame, ctx: RenderContext, wordle: Wordle
 		font_size,
 	)
 	reward_detail := fmt.caprintf("+%d EXP", wordle.reward_exp)
-	push_centered_text(&frame.ui, reward_detail, ctx.screen_width, reward_detail_y, subtitle_font_size, rl.GOLD)
+	push_centered_text(
+		&frame.ui,
+		reward_detail,
+		ctx.screen_width,
+		reward_detail_y,
+		subtitle_font_size,
+		rl.GOLD,
+	)
 }
 
 build_wordle_history :: proc(
@@ -681,9 +794,20 @@ build_wordle_history :: proc(
 	history_reward_font_size := font_size / 2
 	margin := history_reward_size
 	exp_x := margin
-	exp_y := ctx.screen_height - history_reward_size - margin + (history_reward_size - scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)) / 2
+	exp_y :=
+		ctx.screen_height -
+		history_reward_size -
+		margin +
+		(history_reward_size - scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)) / 2
 	exp_label := fmt.caprintf("+%d EXP", record.reward_exp)
-	push_text(&frame.ui, exp_label, exp_x, exp_y, scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale), rl.GOLD)
+	push_text(
+		&frame.ui,
+		exp_label,
+		exp_x,
+		exp_y,
+		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		rl.GOLD,
+	)
 	push_letter_tile(
 		&frame.world,
 		ctx.screen_width - history_reward_size - margin,
@@ -696,18 +820,24 @@ build_wordle_history :: proc(
 }
 
 build_wordle_scene :: proc(frame: ^RenderFrame, ctx: RenderContext, wordle: WordleState) {
-	if wordle.view_mode == .History {
+	switch wordle.view_mode {
+	case .History:
 		if wordle.history_index >= 0 && wordle.history_index < i32(len(wordle.history)) {
-			build_wordle_history(frame, ctx, wordle.history[wordle.history_index], wordle.scroll_row)
+			build_wordle_history(
+				frame,
+				ctx,
+				wordle.history[wordle.history_index],
+				wordle.scroll_row,
+			)
 		}
 		return
-	}
-
-	switch wordle.substate {
-	case .Playing:
-		build_wordle_playing(frame, ctx, wordle)
-	case .Won:
-		build_wordle_win(frame, ctx, wordle)
+	case .Current:
+		switch wordle.substate {
+		case .Playing:
+			build_wordle_playing(frame, ctx, wordle)
+		case .Won:
+			build_wordle_win(frame, ctx, wordle)
+		}
 	}
 }
 
@@ -726,9 +856,5 @@ render_game :: proc(frame: ^RenderFrame, state: GameState) {
 	render_frame_clear(frame)
 	ctx := render_context_new(state.screen_width, state.screen_height)
 	build_render_frame(frame, ctx, state)
-
-	rl.BeginDrawing()
-	rl.ClearBackground(rl.Color{20, 20, 24, 255})
-	flush_render_frame(frame^)
-	rl.EndDrawing()
 }
+
