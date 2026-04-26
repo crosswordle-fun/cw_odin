@@ -10,6 +10,8 @@ main :: proc() {
 	defer rl.CloseWindow()
 
 	state := game_state_new(BASE_SCREEN_WIDTH, BASE_SCREEN_HEIGHT)
+	render_frame := render_frame_new()
+	defer render_frame_destroy(&render_frame)
 
 	for !rl.WindowShouldClose() {
 		game_update_screen_size(&state, rl.GetScreenWidth(), rl.GetScreenHeight())
@@ -42,38 +44,6 @@ main :: proc() {
 			}
 		}
 
-		rl.BeginDrawing()
-		defer rl.EndDrawing()
-
-		rl.ClearBackground(rl.Color{20, 20, 24, 255})
-		render_title(state.screen_width, state.screen_height, state.game_mode)
-		render_exp(state.screen_width, state.screen_height, state.exp)
-
-		if state.game_mode == .Cross {
-			if state.cross_substate == .Game {
-				render_grid(state.grid)
-				render_selector(
-					state.grid,
-					state.selector,
-					state.selector_buffer,
-					state.show_frags,
-				)
-				render_selector_letter(state.grid, state.selector, state.selector_buffer)
-				render_cross_exp_reward(state.grid, state.cross_reward_exp)
-				if state.show_frags do render_frags(state.screen_width, state.screen_height, state.frag_counts)
-				else do render_runes(state.screen_width, state.screen_height, state.rune_counts)
-			} else if state.cross_substate == .Crafting {
-				render_crafting(
-					state.screen_width,
-					state.screen_height,
-					state.crafting,
-					state.frag_counts,
-					state.rune_counts,
-					state.show_frags,
-				)
-			}
-		} else if state.game_mode == .Wordle {
-			render_wordle(state.screen_width, state.screen_height, state.wordle)
-		}
+		render_game(&render_frame, state)
 	}
 }
