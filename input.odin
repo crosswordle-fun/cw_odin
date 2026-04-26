@@ -3,6 +3,58 @@ package main
 import "core:math"
 import rl "vendor:raylib"
 
+read_pressed_letter :: proc() -> (letter: rune, ok: bool) {
+	for {
+		ch := rl.GetCharPressed()
+		if ch == 0 do return 0, false
+		if ch >= 'a' && ch <= 'z' do ch -= 'a' - 'A'
+		if ch >= 'A' && ch <= 'Z' do return rune(ch), true
+	}
+}
+
+handle_input :: proc(state: ^GameState) {
+	handle_game_mode_toggle_input(state)
+
+	switch state.game_mode {
+	case .Cross:
+		handle_cross_input(state)
+	case .Wordle:
+		handle_wordle_input(state)
+	}
+}
+
+handle_cross_input :: proc(state: ^GameState) {
+	handle_inventory_debug_input(state)
+	handle_cross_substate_toggle_input(state)
+
+	switch state.cross_substate {
+	case .Game:
+		handle_arrow_key_input(state)
+		handle_mouse_selection_input(state)
+		handle_selector_buffer_input(state)
+		handle_selector_direction_input(state)
+		handle_submit_input(state)
+		handle_view_toggle_input(state)
+	case .Crafting:
+		handle_crafting_selection_input(state)
+		handle_crafting_submit_input(state)
+		handle_view_toggle_input(state)
+	}
+}
+
+handle_wordle_input :: proc(state: ^GameState) {
+	handle_wordle_history_input(state)
+	handle_wordle_attempt_scroll_input(state)
+
+	switch state.wordle.substate {
+	case .Playing:
+		handle_wordle_guess_input(state)
+		handle_wordle_submit_input(state)
+	case .Won:
+		handle_wordle_win_input(state)
+	}
+}
+
 handle_arrow_key_input :: proc(state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.UP) do selector_move(&state.selector, -1, 0, state.grid)
 	if rl.IsKeyPressed(rl.KeyboardKey.DOWN) do selector_move(&state.selector, 1, 0, state.grid)
@@ -58,18 +110,9 @@ handle_selector_buffer_input :: proc(state: ^GameState) {
 	}
 
 	for {
-		ch := rl.GetCharPressed()
-		if ch == 0 {
-			break
-		}
-
-		if ch >= 'a' && ch <= 'z' {
-			ch -= 'a' - 'A'
-		}
-
-		if ch >= 'A' && ch <= 'Z' {
-			selector_buffer_push_letter(&state.selector_buffer, rune(ch))
-		}
+		letter, ok := read_pressed_letter()
+		if !ok do break
+		selector_buffer_push_letter(&state.selector_buffer, letter)
 	}
 }
 
@@ -102,18 +145,9 @@ handle_crafting_selection_input :: proc(state: ^GameState) {
 	}
 
 	for {
-		ch := rl.GetCharPressed()
-		if ch == 0 {
-			break
-		}
-
-		if ch >= 'a' && ch <= 'z' {
-			ch -= 'a' - 'A'
-		}
-
-		if ch >= 'A' && ch <= 'Z' {
-			crafting_push_letter(&state.crafting, state.frag_counts, rune(ch))
-		}
+		letter, ok := read_pressed_letter()
+		if !ok do break
+		crafting_push_letter(&state.crafting, state.frag_counts, letter)
 	}
 }
 
@@ -160,18 +194,9 @@ handle_wordle_guess_input :: proc(state: ^GameState) {
 	}
 
 	for {
-		ch := rl.GetCharPressed()
-		if ch == 0 {
-			break
-		}
-
-		if ch >= 'a' && ch <= 'z' {
-			ch -= 'a' - 'A'
-		}
-
-		if ch >= 'A' && ch <= 'Z' {
-			wordle_push_letter(&state.wordle, rune(ch))
-		}
+		letter, ok := read_pressed_letter()
+		if !ok do break
+		wordle_push_letter(&state.wordle, letter)
 	}
 }
 

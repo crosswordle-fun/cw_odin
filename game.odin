@@ -2,6 +2,58 @@ package main
 
 import rl "vendor:raylib"
 
+scaled_i32 :: proc(value: i32, scale: f32) -> i32 {
+	scaled := i32(f32(value) * scale + 0.5)
+	if scaled < 1 do return 1
+	return scaled
+}
+
+screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
+	scale_x := f32(screen_width) / f32(VIRTUAL_SCREEN_WIDTH)
+	scale_y := f32(screen_height) / f32(VIRTUAL_SCREEN_HEIGHT)
+	if scale_y < scale_x do return scale_y
+	return scale_x
+}
+
+grid_pixel_width :: proc(grid: Grid) -> i32 {
+	return grid.cols * grid.cell_size + (grid.cols - 1) * grid.gap
+}
+
+grid_pixel_height :: proc(grid: Grid) -> i32 {
+	return grid.rows * grid.cell_size + (grid.rows - 1) * grid.gap
+}
+
+grid_tile_index :: proc(grid: Grid, row: i32, col: i32) -> i32 {
+	return row * grid.cols + col
+}
+
+grid_tile_position :: proc(grid: Grid, row: i32, col: i32) -> (x: i32, y: i32) {
+	x = grid.offset_x + col * (grid.cell_size + grid.gap)
+	y = grid.offset_y + row * (grid.cell_size + grid.gap)
+	return
+}
+
+selector_letter_position :: proc(grid: Grid, selector: Selector, offset: i32) -> (row: i32, col: i32) {
+	row = selector.row
+	col = selector.col
+	if selector.down {
+		row += offset
+	} else {
+		col += offset
+	}
+	return
+}
+
+grid_update_layout :: proc(grid: ^Grid, screen_width: i32, screen_height: i32) {
+	scale := screen_scale(screen_width, screen_height)
+	grid.cell_size = scaled_i32(BASE_CELL_SIZE, scale)
+	grid.gap = scaled_i32(BASE_GAP, scale)
+	grid.screen_width = screen_width
+	grid.screen_height = screen_height
+	grid.offset_x = (screen_width - grid_pixel_width(grid^)) / 2
+	grid.offset_y = (screen_height - grid_pixel_height(grid^)) / 2
+}
+
 grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
 	grid_width := GRID_COLS * BASE_CELL_SIZE + (GRID_COLS - 1) * BASE_GAP
 	grid_height := GRID_ROWS * BASE_CELL_SIZE + (GRID_ROWS - 1) * BASE_GAP
@@ -480,10 +532,8 @@ selector_submission_collect_requirements :: proc(
 	grid: Grid,
 	selector: Selector,
 	selector_buffer: SelectorBuffer,
-	frag_counts: Frags,
 	show_frags: bool,
-	required_frags: ^Frags,
-	required_runes: ^Runes,
+	required: ^Frags,
 ) -> bool {
 	for i in 0 ..< selector_buffer.count {
 		letter := selector_buffer.letters[i]
@@ -493,8 +543,7 @@ selector_submission_collect_requirements :: proc(
 		if tile_index < 0 || tile_index >= i32(len(grid.frags)) do return false
 		if frag_index < 0 || frag_index >= LETTER_COUNT do return false
 
-		required_frags[frag_index] += 1
-		required_runes[frag_index] += 1
+		required[frag_index] += 1
 
 		if show_frags {
 			if grid.frags[tile_index] != 0 do return false
@@ -508,87 +557,40 @@ selector_submission_collect_requirements :: proc(
 }
 
 selector_submission_has_inventory :: proc(
-	required_frags: Frags,
-	required_runes: Runes,
+	required: Frags,
 	frag_counts: Frags,
 	rune_counts: Runes,
 	show_frags: bool,
 ) -> bool {
 	if show_frags {
 		for i in 0 ..< LETTER_COUNT {
-			if required_frags[i] > frag_counts[i] do return false
+			if required[i] > frag_counts[i] do return false
 		}
 	} else {
 		for i in 0 ..< LETTER_COUNT {
-			if required_runes[i] > rune_counts[i] do return false
+			if required[i] > rune_counts[i] do return false
 		}
 	}
 	return true
-}
-
-place_frags_from_selector_buffer :: proc(
-	grid: ^Grid,
-	selector: Selector,
-	selector_buffer: SelectorBuffer,
-	frag_counts: ^Frags,
-	exp: ^u32,
-	reward_exp: ^u32,
-) {
-	for i in 0 ..< selector_buffer.count {
-		letter := selector_buffer.letters[i]
-		frag_index := i32(letter - 'A')
-		tile_row, tile_col := selector_letter_position(grid^, selector, i)
-		tile_index := grid_tile_index(grid^, tile_row, tile_col)
-
-		grid.frags[tile_index] = letter
-		frag_counts[frag_index] -= 1
-		exp^ += grid.frag_exp[tile_index]
-		reward_exp^ += grid.frag_exp[tile_index]
-	}
-}
-
-place_runes_from_selector_buffer :: proc(
-	grid: ^Grid,
-	selector: Selector,
-	selector_buffer: SelectorBuffer,
-	rune_counts: ^Runes,
-	exp: ^u32,
-	reward_exp: ^u32,
-) {
-	for i in 0 ..< selector_buffer.count {
-		letter := selector_buffer.letters[i]
-		frag_index := i32(letter - 'A')
-		tile_row, tile_col := selector_letter_position(grid^, selector, i)
-		tile_index := grid_tile_index(grid^, tile_row, tile_col)
-
-		grid.runes[tile_index] = letter
-		rune_counts[frag_index] -= 1
-		exp^ += grid.rune_exp[tile_index]
-		reward_exp^ += grid.rune_exp[tile_index]
-	}
 }
 
 game_submit_selector_buffer :: proc(state: ^GameState) {
 	if state.selector_buffer.count == 0 do return
 	if !selector_submission_fits_grid(state.grid, state.selector, state.selector_buffer.count) do return
 
-	required_frags := Frags{}
-	required_runes := Runes{}
+	required := Frags{}
 	if !selector_submission_collect_requirements(
 		state.grid,
 		state.selector,
 		state.selector_buffer,
-		state.frag_counts,
 		state.show_frags,
-		&required_frags,
-		&required_runes,
+		&required,
 	) {
 		return
 	}
 
 	if !selector_submission_has_inventory(
-		required_frags,
-		required_runes,
+		required,
 		state.frag_counts,
 		state.rune_counts,
 		state.show_frags,
@@ -596,28 +598,24 @@ game_submit_selector_buffer :: proc(state: ^GameState) {
 		return
 	}
 
-	if state.show_frags {
-		state.cross_reward_exp = 0
-		place_frags_from_selector_buffer(
-			&state.grid,
-			state.selector,
-			state.selector_buffer,
-			&state.frag_counts,
-			&state.exp,
-			&state.cross_reward_exp,
-		)
-		selector_buffer_clear(&state.selector_buffer)
-		return
-	}
-
 	state.cross_reward_exp = 0
-	place_runes_from_selector_buffer(
-		&state.grid,
-		state.selector,
-		state.selector_buffer,
-		&state.rune_counts,
-		&state.exp,
-		&state.cross_reward_exp,
-	)
+	for i in 0 ..< state.selector_buffer.count {
+		letter := state.selector_buffer.letters[i]
+		frag_index := i32(letter - 'A')
+		tile_row, tile_col := selector_letter_position(state.grid, state.selector, i)
+		tile_index := grid_tile_index(state.grid, tile_row, tile_col)
+
+		if state.show_frags {
+			state.grid.frags[tile_index] = letter
+			state.frag_counts[frag_index] -= 1
+			state.exp += state.grid.frag_exp[tile_index]
+			state.cross_reward_exp += state.grid.frag_exp[tile_index]
+		} else {
+			state.grid.runes[tile_index] = letter
+			state.rune_counts[frag_index] -= 1
+			state.exp += state.grid.rune_exp[tile_index]
+			state.cross_reward_exp += state.grid.rune_exp[tile_index]
+		}
+	}
 	selector_buffer_clear(&state.selector_buffer)
 }
