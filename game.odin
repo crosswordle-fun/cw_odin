@@ -1,7 +1,5 @@
 package main
 
-import rl "vendor:raylib"
-
 scaled_i32 :: proc(value: i32, scale: f32) -> i32 {
 	scaled := i32(f32(value) * scale + 0.5)
 	if scaled < 1 do return 1
@@ -49,22 +47,6 @@ selector_letter_position :: proc(
 		col += offset
 	}
 	return
-}
-
-grid_update_layout :: proc(grid: ^Grid, screen_width: i32, screen_height: i32) {
-	scale_x := f32(screen_width) / f32(VIRTUAL_SCREEN_WIDTH)
-	scale_y := f32(screen_height) / f32(VIRTUAL_SCREEN_HEIGHT)
-	scale := scale_x
-	if scale_y < scale_x do scale = scale_y
-
-	grid.cell_size = i32(f32(BASE_CELL_SIZE) * scale + 0.5)
-	if grid.cell_size < 1 do grid.cell_size = 1
-	grid.gap = i32(f32(BASE_GAP) * scale + 0.5)
-	if grid.gap < 1 do grid.gap = 1
-	grid.screen_width = screen_width
-	grid.screen_height = screen_height
-	grid.offset_x = (screen_width - grid_pixel_width(grid^)) / 2
-	grid.offset_y = (screen_height - grid_pixel_height(grid^)) / 2
 }
 
 grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
@@ -231,70 +213,6 @@ crafting_pop_letter :: proc(crafting: ^CraftingState) {
 	crafting.selected[crafting.count] = 0
 }
 
-crafting_selection_all_same :: proc(crafting: CraftingState) -> bool {
-	if crafting.count == 0 do return false
-
-	letter := crafting.selected[0]
-	for i in 1 ..< crafting.count {
-		if crafting.selected[i] != letter do return false
-	}
-	return true
-}
-
-crafting_selection_all_different :: proc(crafting: CraftingState) -> bool {
-	for i in 0 ..< crafting.count {
-		for j in i + 1 ..< crafting.count {
-			if crafting.selected[i] == crafting.selected[j] do return false
-		}
-	}
-	return true
-}
-
-crafting_selection_has_inventory :: proc(crafting: CraftingState, frag_counts: Frags) -> bool {
-	required := Frags{}
-	for i in 0 ..< crafting.count {
-		frag_index := i32(crafting.selected[i] - 'A')
-		if frag_index < 0 || frag_index >= LETTER_COUNT do return false
-		required[frag_index] += 1
-	}
-
-	for i in 0 ..< LETTER_COUNT {
-		if required[i] > frag_counts[i] do return false
-	}
-	return true
-}
-
-crafting_spend_selection :: proc(crafting: CraftingState, frag_counts: ^Frags) {
-	for i in 0 ..< crafting.count {
-		frag_index := i32(crafting.selected[i] - 'A')
-		frag_counts[frag_index] -= 1
-	}
-}
-
-crafting_submit :: proc(state: ^GameState) {
-	if !crafting_selection_has_inventory(state.crafting, state.frag_counts) do return
-
-	if state.crafting.count == 4 && crafting_selection_all_same(state.crafting) {
-		letter := state.crafting.selected[0]
-		frag_index := i32(letter - 'A')
-		crafting_spend_selection(state.crafting, &state.frag_counts)
-		state.rune_counts[frag_index] += 1
-		state.exp += RUNE_CRAFT_EXP_REWARD
-		state.crafting.crafted_rune = letter
-		crafting_clear_selection(&state.crafting)
-		return
-	}
-
-	if state.crafting.count == 5 && crafting_selection_all_different(state.crafting) {
-		crafted_index := rl.GetRandomValue(0, LETTER_COUNT - 1)
-		crafting_spend_selection(state.crafting, &state.frag_counts)
-		state.rune_counts[crafted_index] += 1
-		state.exp += RUNE_CRAFT_EXP_REWARD
-		state.crafting.crafted_rune = FRAG_LETTERS[crafted_index]
-		crafting_clear_selection(&state.crafting)
-	}
-}
-
 wordle_state_new :: proc() -> WordleState {
 	return WordleState {
 		guesses = make([dynamic]WordleGuess, 0, 32),
@@ -387,23 +305,6 @@ wordle_evaluate_guess :: proc(
 	return result
 }
 
-wordle_guess_is_solution :: proc(guess: WordleGuess) -> bool {
-	for i in 0 ..< WORDLE_WORD_LEN {
-		if guess.feedback[i] != .Correct do return false
-	}
-	return true
-}
-
-wordle_reward_fragment :: proc(state: ^GameState, solution: [WORDLE_WORD_LEN]rune) -> rune {
-	reward_index := rl.GetRandomValue(0, WORDLE_WORD_LEN - 1)
-	letter := solution[reward_index]
-	frag_index := i32(letter - 'A')
-	if frag_index >= 0 && frag_index < LETTER_COUNT {
-		state.frag_counts[frag_index] += 1
-	}
-	return letter
-}
-
 wordle_copy_guesses :: proc(guesses: [dynamic]WordleGuess) -> [dynamic]WordleGuess {
 	copied := make([dynamic]WordleGuess, len(guesses), len(guesses))
 	for i in 0 ..< len(guesses) {
@@ -412,236 +313,9 @@ wordle_copy_guesses :: proc(guesses: [dynamic]WordleGuess) -> [dynamic]WordleGue
 	return copied
 }
 
-wordle_store_current_level :: proc(wordle: ^WordleState) {
-	record := WordleLevelRecord {
-		guesses         = wordle_copy_guesses(wordle.guesses),
-		level           = wordle.level,
-		solution        = wordle.win_solution,
-		reward_fragment = wordle.reward_fragment,
-		reward_exp      = wordle.reward_exp,
-	}
-	append(&wordle.history, record)
-}
-
-wordle_advance_level :: proc(wordle: ^WordleState) {
-	wordle_store_current_level(wordle)
-	clear(&wordle.guesses)
-	wordle_clear_current_guess(wordle)
-	wordle.win_solution = [WORDLE_WORD_LEN]rune{}
-	wordle.reward_fragment = 0
-	wordle.reward_exp = 0
-	wordle.substate = .Playing
-	wordle.view_mode = .Current
-	wordle.history_index = -1
-	wordle.scroll_row = 0
-	wordle.level += 1
-}
-
-wordle_submit_guess :: proc(state: ^GameState) {
-	if !wordle_is_viewing_current_level(state.wordle) do return
-	if state.wordle.substate != .Playing do return
-	if state.wordle.current_count < WORDLE_WORD_LEN do return
-
-	solution := wordle_current_solution(state.wordle)
-	guess := wordle_evaluate_guess(state.wordle.current_guess, solution)
-	append(&state.wordle.guesses, guess)
-	wordle_clear_current_guess(&state.wordle)
-
-	if wordle_guess_is_solution(guess) {
-		state.wordle.win_solution = solution
-		state.wordle.reward_fragment = wordle_reward_fragment(state, solution)
-		state.wordle.reward_exp = WORDLE_LEVEL_EXP_REWARD
-		state.exp += state.wordle.reward_exp
-		state.wordle.substate = .Won
-	}
-}
-
-wordle_continue_after_win :: proc(wordle: ^WordleState) {
-	if !wordle_is_viewing_current_level(wordle^) do return
-	if wordle.substate == .Won do wordle_advance_level(wordle)
-}
-
-wordle_view_previous_level :: proc(wordle: ^WordleState) {
-	if len(wordle.history) == 0 do return
-
-	if wordle.view_mode == .Current {
-		wordle.view_mode = .History
-		wordle.history_index = i32(len(wordle.history)) - 1
-		wordle.scroll_row = 0
-		return
-	}
-
-	if wordle.history_index > 0 {
-		wordle.history_index -= 1
-		wordle.scroll_row = 0
-	}
-}
-
-wordle_view_next_level :: proc(wordle: ^WordleState) {
-	if wordle.view_mode != .History do return
-
-	last_index := i32(len(wordle.history)) - 1
-	if wordle.history_index < last_index {
-		wordle.history_index += 1
-		wordle.scroll_row = 0
-		return
-	}
-
-	wordle.view_mode = .Current
-	wordle.history_index = -1
-	wordle.scroll_row = 0
-}
-
-wordle_view_current_level :: proc(wordle: ^WordleState) {
-	wordle.view_mode = .Current
-	wordle.history_index = -1
-	wordle.scroll_row = 0
-}
-
 wordle_visible_row_count :: proc(screen_height: i32, start_y: i32, row_step: i32) -> i32 {
 	visible_rows := (screen_height - start_y - row_step) / row_step
 	if visible_rows < 1 do visible_rows = 1
 	return visible_rows
-}
-
-wordle_current_total_rows :: proc(wordle: WordleState) -> i32 {
-	if wordle.substate == .Playing {
-		return i32(len(wordle.guesses)) + 1
-	}
-	return i32(len(wordle.guesses))
-}
-
-wordle_history_total_rows :: proc(wordle: WordleState) -> i32 {
-	if wordle.history_index < 0 || wordle.history_index >= i32(len(wordle.history)) do return 0
-	return i32(len(wordle.history[wordle.history_index].guesses))
-}
-
-wordle_view_total_rows :: proc(wordle: WordleState) -> i32 {
-	if wordle.view_mode == .History do return wordle_history_total_rows(wordle)
-	return wordle_current_total_rows(wordle)
-}
-
-wordle_clamp_scroll_row :: proc(wordle: ^WordleState, visible_rows: i32) {
-	total_rows := wordle_view_total_rows(wordle^)
-	max_scroll := total_rows - visible_rows
-	if max_scroll < 0 do max_scroll = 0
-	wordle.scroll_row = clamp(wordle.scroll_row, 0, max_scroll)
-}
-
-wordle_scroll_attempts_latest :: proc(wordle: ^WordleState, visible_rows: i32) {
-	total_rows := wordle_view_total_rows(wordle^)
-	wordle.scroll_row = total_rows - visible_rows
-	wordle_clamp_scroll_row(wordle, visible_rows)
-}
-
-wordle_scroll_attempts_up :: proc(wordle: ^WordleState, visible_rows: i32) {
-	wordle.scroll_row -= 1
-	wordle_clamp_scroll_row(wordle, visible_rows)
-}
-
-wordle_scroll_attempts_down :: proc(wordle: ^WordleState, visible_rows: i32) {
-	wordle.scroll_row += 1
-	wordle_clamp_scroll_row(wordle, visible_rows)
-}
-
-selector_submission_fits_grid :: proc(grid: Grid, selector: Selector, letter_count: i32) -> bool {
-	if selector.down {
-		if selector.row + letter_count > grid.rows do return false
-	} else {
-		if selector.col + letter_count > grid.cols do return false
-	}
-	return true
-}
-
-selector_submission_collect_requirements :: proc(
-	grid: Grid,
-	selector: Selector,
-	selector_buffer: SelectorBuffer,
-	show_frags: bool,
-	required: ^Frags,
-) -> bool {
-	for i in 0 ..< selector_buffer.count {
-		letter := selector_buffer.letters[i]
-		frag_index := i32(letter - 'A')
-		tile_row, tile_col := selector_letter_position(grid, selector, i)
-		tile_index := grid_tile_index(grid, tile_row, tile_col)
-		if tile_index < 0 || tile_index >= i32(len(grid.frags)) do return false
-		if frag_index < 0 || frag_index >= LETTER_COUNT do return false
-
-		required[frag_index] += 1
-
-		if show_frags {
-			if grid.frags[tile_index] != 0 do return false
-			continue
-		}
-
-		if grid.frags[tile_index] != letter do return false
-		if grid.runes[tile_index] != 0 do return false
-	}
-	return true
-}
-
-selector_submission_has_inventory :: proc(
-	required: Frags,
-	frag_counts: Frags,
-	rune_counts: Runes,
-	show_frags: bool,
-) -> bool {
-	if show_frags {
-		for i in 0 ..< LETTER_COUNT {
-			if required[i] > frag_counts[i] do return false
-		}
-	} else {
-		for i in 0 ..< LETTER_COUNT {
-			if required[i] > rune_counts[i] do return false
-		}
-	}
-	return true
-}
-
-game_submit_selector_buffer :: proc(state: ^GameState) {
-	if state.selector_buffer.count == 0 do return
-	if !selector_submission_fits_grid(state.grid, state.selector, state.selector_buffer.count) do return
-
-	required := Frags{}
-	if !selector_submission_collect_requirements(
-		state.grid,
-		state.selector,
-		state.selector_buffer,
-		state.show_frags,
-		&required,
-	) {
-		return
-	}
-
-	if !selector_submission_has_inventory(
-		required,
-		state.frag_counts,
-		state.rune_counts,
-		state.show_frags,
-	) {
-		return
-	}
-
-	state.cross_reward_exp = 0
-	for i in 0 ..< state.selector_buffer.count {
-		letter := state.selector_buffer.letters[i]
-		frag_index := i32(letter - 'A')
-		tile_row, tile_col := selector_letter_position(state.grid, state.selector, i)
-		tile_index := grid_tile_index(state.grid, tile_row, tile_col)
-
-		if state.show_frags {
-			state.grid.frags[tile_index] = letter
-			state.frag_counts[frag_index] -= 1
-			state.exp += state.grid.frag_exp[tile_index]
-			state.cross_reward_exp += state.grid.frag_exp[tile_index]
-		} else {
-			state.grid.runes[tile_index] = letter
-			state.rune_counts[frag_index] -= 1
-			state.exp += state.grid.rune_exp[tile_index]
-			state.cross_reward_exp += state.grid.rune_exp[tile_index]
-		}
-	}
-	selector_buffer_clear(&state.selector_buffer)
 }
 
