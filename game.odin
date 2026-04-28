@@ -156,20 +156,6 @@ game_toggle_frag_rune_view :: proc(state: ^GameState) {
 game_set_view :: proc(state: ^GameState, view: GameView) {
 	if state.view == view do return
 
-	switch state.view {
-	case .Cross:
-		state.selector_buffer.count = 0
-		for i in 0 ..< len(state.selector_buffer.letters) {
-			state.selector_buffer.letters[i] = 0
-		}
-	case .Crafting:
-		state.crafting.count = 0
-		for i in 0 ..< len(state.crafting.selected) {
-			state.crafting.selected[i] = 0
-		}
-	case .Wordle:
-	}
-
 	state.view = view
 }
 
@@ -318,4 +304,3 @@ wordle_visible_row_count :: proc(screen_height: i32, start_y: i32, row_step: i32
 	if visible_rows < 1 do visible_rows = 1
 	return visible_rows
 }
-
