@@ -33,7 +33,14 @@ grid_tile_position :: proc(grid: Grid, row: i32, col: i32) -> (x: i32, y: i32) {
 	return
 }
 
-selector_letter_position :: proc(grid: Grid, selector: Selector, offset: i32) -> (row: i32, col: i32) {
+selector_letter_position :: proc(
+	grid: Grid,
+	selector: Selector,
+	offset: i32,
+) -> (
+	row: i32,
+	col: i32,
+) {
 	row = selector.row
 	col = selector.col
 	if selector.down {
@@ -45,9 +52,15 @@ selector_letter_position :: proc(grid: Grid, selector: Selector, offset: i32) ->
 }
 
 grid_update_layout :: proc(grid: ^Grid, screen_width: i32, screen_height: i32) {
-	scale := screen_scale(screen_width, screen_height)
-	grid.cell_size = scaled_i32(BASE_CELL_SIZE, scale)
-	grid.gap = scaled_i32(BASE_GAP, scale)
+	scale_x := f32(screen_width) / f32(VIRTUAL_SCREEN_WIDTH)
+	scale_y := f32(screen_height) / f32(VIRTUAL_SCREEN_HEIGHT)
+	scale := scale_x
+	if scale_y < scale_x do scale = scale_y
+
+	grid.cell_size = i32(f32(BASE_CELL_SIZE) * scale + 0.5)
+	if grid.cell_size < 1 do grid.cell_size = 1
+	grid.gap = i32(f32(BASE_GAP) * scale + 0.5)
+	if grid.gap < 1 do grid.gap = 1
 	grid.screen_width = screen_width
 	grid.screen_height = screen_height
 	grid.offset_x = (screen_width - grid_pixel_width(grid^)) / 2
@@ -105,7 +118,21 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 }
 
 game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_height: i32) {
-	grid_update_layout(&state.grid, virtual_width, virtual_height)
+	scale_x := f32(virtual_width) / f32(VIRTUAL_SCREEN_WIDTH)
+	scale_y := f32(virtual_height) / f32(VIRTUAL_SCREEN_HEIGHT)
+	scale := scale_x
+	if scale_y < scale_x do scale = scale_y
+
+	state.grid.cell_size = i32(f32(BASE_CELL_SIZE) * scale + 0.5)
+	if state.grid.cell_size < 1 do state.grid.cell_size = 1
+	state.grid.gap = i32(f32(BASE_GAP) * scale + 0.5)
+	if state.grid.gap < 1 do state.grid.gap = 1
+	state.grid.screen_width = virtual_width
+	state.grid.screen_height = virtual_height
+	state.grid.offset_x = (virtual_width - grid_pixel_width(state.grid)) / 2
+	state.grid.offset_y = (virtual_height - grid_pixel_height(state.grid)) / 2
+	state.screen_width = virtual_width
+	state.screen_height = virtual_height
 }
 
 selector_move :: proc(selector: ^Selector, row_delta: i32, col_delta: i32, grid: Grid) {
@@ -149,9 +176,15 @@ game_set_view :: proc(state: ^GameState, view: GameView) {
 
 	switch state.view {
 	case .Cross:
-		selector_buffer_clear(&state.selector_buffer)
+		state.selector_buffer.count = 0
+		for i in 0 ..< len(state.selector_buffer.letters) {
+			state.selector_buffer.letters[i] = 0
+		}
 	case .Crafting:
-		crafting_clear_selection(&state.crafting)
+		state.crafting.count = 0
+		for i in 0 ..< len(state.crafting.selected) {
+			state.crafting.selected[i] = 0
+		}
 	case .Wordle:
 	}
 
@@ -611,3 +644,4 @@ game_submit_selector_buffer :: proc(state: ^GameState) {
 	}
 	selector_buffer_clear(&state.selector_buffer)
 }
+

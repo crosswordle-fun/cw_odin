@@ -84,8 +84,8 @@ push_rect :: proc(
 	height: i32,
 	color: rl.Color,
 ) {
-	render_buffer_push(
-		buffer,
+	append(
+		&buffer.commands,
 		RenderCommand {
 			kind = .Rect,
 			rect = rl.Rectangle{f32(x), f32(y), f32(width), f32(height)},
@@ -103,8 +103,8 @@ push_rect_lines :: proc(
 	thickness: f32,
 	color: rl.Color,
 ) {
-	render_buffer_push(
-		buffer,
+	append(
+		&buffer.commands,
 		RenderCommand {
 			kind = .Rect_Lines,
 			rect = rl.Rectangle{f32(x), f32(y), f32(width), f32(height)},
@@ -122,8 +122,8 @@ push_text :: proc(
 	font_size: i32,
 	color: rl.Color,
 ) {
-	render_buffer_push(
-		buffer,
+	append(
+		&buffer.commands,
 		RenderCommand {
 			kind = .Text,
 			text = label,
@@ -143,7 +143,16 @@ push_centered_text :: proc(
 	color: rl.Color,
 ) {
 	label_width := rl.MeasureText(label, font_size)
-	push_text(buffer, label, (screen_width - label_width) / 2, y, font_size, color)
+	append(
+		&buffer.commands,
+		RenderCommand {
+			kind = .Text,
+			text = label,
+			rect = rl.Rectangle{f32((screen_width - label_width) / 2), f32(y), 0, 0},
+			font_size = font_size,
+			color = color,
+		},
+	)
 }
 
 push_letter_tile :: proc(
@@ -155,14 +164,30 @@ push_letter_tile :: proc(
 	color: rl.Color,
 	font_size: i32,
 ) {
-	push_rect(buffer, x, y, size, size, color)
+	append(
+		&buffer.commands,
+		RenderCommand {
+			kind = .Rect,
+			rect = rl.Rectangle{f32(x), f32(y), f32(size), f32(size)},
+			color = color,
+		},
+	)
 
 	if letter != 0 {
 		label := fmt.caprintf("%c", letter)
 		text_width := rl.MeasureText(label, font_size)
 		text_x := x + (size - text_width) / 2
 		text_y := y + (size - font_size) / 2
-		push_text(buffer, label, text_x, text_y, font_size, rl.WHITE)
+		append(
+			&buffer.commands,
+			RenderCommand {
+				kind = .Text,
+				text = label,
+				rect = rl.Rectangle{f32(text_x), f32(text_y), 0, 0},
+				font_size = font_size,
+				color = rl.WHITE,
+			},
+		)
 	}
 }
 
