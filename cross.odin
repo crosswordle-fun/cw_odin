@@ -1,6 +1,5 @@
 package main
 
-import "core:math"
 import rl "vendor:raylib"
 
 cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
@@ -12,21 +11,8 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 	if rl.IsKeyPressed(rl.KeyboardKey.RIGHT) do selector_move(&state.selector, 0, 1, state.grid)
 
 	if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
-		mouse_pos := rl.GetMousePosition()
-		win_w := f32(rl.GetScreenWidth())
-		win_h := f32(rl.GetScreenHeight())
-		scale := math.min(win_w / f32(VIRTUAL_SCREEN_WIDTH), win_h / f32(VIRTUAL_SCREEN_HEIGHT))
-		dst_w := f32(VIRTUAL_SCREEN_WIDTH) * scale
-		dst_h := f32(VIRTUAL_SCREEN_HEIGHT) * scale
-		dst_x := (win_w - dst_w) * 0.5
-		dst_y := (win_h - dst_h) * 0.5
-
-		if mouse_pos.x >= dst_x &&
-		   mouse_pos.y >= dst_y &&
-		   mouse_pos.x < dst_x + dst_w &&
-		   mouse_pos.y < dst_y + dst_h {
-			mouse_pos.x = (mouse_pos.x - dst_x) / scale
-			mouse_pos.y = (mouse_pos.y - dst_y) / scale
+		mouse_pos, ok := virtual_mouse_position()
+		if ok {
 			grid_right := state.grid.offset_x + grid_pixel_width(state.grid)
 			grid_bottom := state.grid.offset_y + grid_pixel_height(state.grid)
 			if mouse_pos.x >= f32(state.grid.offset_x) &&

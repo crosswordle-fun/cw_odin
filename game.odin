@@ -93,7 +93,8 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 		selector = selector_new(grid),
 		wordle = wordle_state_new(),
 		show_frags = true,
-		view = .Cross,
+		view = .Menu,
+		menu_selection = 0,
 		screen_width = virtual_width,
 		screen_height = virtual_height,
 	}

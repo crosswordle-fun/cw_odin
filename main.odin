@@ -7,7 +7,8 @@ main :: proc() {
 	rl.SetTargetFPS(60)
 	rl.SetConfigFlags(rl.ConfigFlags{.WINDOW_RESIZABLE})
 
-	rl.InitWindow(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT, "cw_odin")
+	rl.InitWindow(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT, "CROSSWORDLE")
+	rl.SetExitKey(rl.KeyboardKey(0))
 	defer rl.CloseWindow()
 
 	render_frame := render_frame_new()
@@ -19,14 +20,24 @@ main :: proc() {
 
 	for !rl.WindowShouldClose() {
 		game_update_screen_size(&state, VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT)
+		escape_pressed := rl.IsKeyPressed(rl.KeyboardKey.ESCAPE)
 
-		if rl.IsKeyPressed(rl.KeyboardKey.ONE) do game_set_view(&state, .Wordle)
-		if rl.IsKeyPressed(rl.KeyboardKey.TWO) do game_set_view(&state, .Cross)
-		if rl.IsKeyPressed(rl.KeyboardKey.THREE) do game_set_view(&state, .Crafting)
+		if state.view != .Menu {
+			if escape_pressed {
+				game_set_view(&state, .Menu)
+			}
+			if rl.IsKeyPressed(rl.KeyboardKey.ONE) do game_set_view(&state, .Wordle)
+			if rl.IsKeyPressed(rl.KeyboardKey.TWO) do game_set_view(&state, .Cross)
+			if rl.IsKeyPressed(rl.KeyboardKey.THREE) do game_set_view(&state, .Crafting)
+		} else if escape_pressed {
+			state.should_quit = true
+		}
 
 		render_frame_clear(&render_frame)
 		ctx := render_context_new(state.screen_width, state.screen_height)
 		switch state.view {
+		case .Menu:
+			menu_mode_frame(&render_frame, ctx, &state)
 		case .Wordle:
 			wordle_mode_frame(&render_frame, ctx, &state)
 		case .Cross:
@@ -34,6 +45,8 @@ main :: proc() {
 		case .Crafting:
 			crafting_mode_frame(&render_frame, ctx, &state)
 		}
+
+		if state.should_quit do break
 
 		rl.BeginTextureMode(render_target)
 		rl.ClearBackground(rl.Color{20, 20, 24, 255})

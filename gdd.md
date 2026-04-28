@@ -33,7 +33,7 @@ The game uses a fixed design resolution and scales UI and board elements proport
 
 ## 4. Core Player Experience
 
-The player sees a title-style mode selector at the top of the screen showing `Cross` and `Wordle`. The active mode is highlighted.
+The player starts on a title screen, then enters the title-style mode selector at the top of the screen showing `Cross` and `Wordle`. The active mode is highlighted.
 
 The global player progression is represented by **EXP**, shown in the upper-left corner. EXP is gained by:
 
@@ -441,8 +441,9 @@ Important nested state:
 On launch:
 
 - A resizable 1280x720 window opens.
-- Cross mode starts active.
-- Cross view starts active.
+- The menu view starts active.
+- The title screen shows `CROSSWORDLE` with `START` and `EXIT` buttons.
+- Choosing `START` enters Cross view.
 - The grid is empty.
 - The selector starts in the center of the board.
 - Fragment and rune inventories start empty.
@@ -468,7 +469,6 @@ The current implementation intentionally or practically omits several systems:
 - No save/load persistence.
 - No audio.
 - No animation beyond immediate frame redraws.
-- No main menu.
 - No pause menu.
 - No settings screen.
 - No dictionary validation for Cross or Wordle inputs.
@@ -488,7 +488,7 @@ The current implementation intentionally or practically omits several systems:
 The main loop:
 
 1. Updates screen size and layout.
-2. Handles global view selection input.
+2. Handles global view selection input outside the menu.
 3. Routes input based on the active view.
 4. Builds and renders the current frame.
 

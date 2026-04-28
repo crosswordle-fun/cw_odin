@@ -108,6 +108,7 @@ SelectorBuffer :: struct {
 }
 
 GameView :: enum {
+	Menu,
 	Wordle,
 	Cross,
 	Crafting,
@@ -176,6 +177,8 @@ GameState :: struct {
 	show_frags:       bool,
 	view:             GameView,
 	crafting:         CraftingState,
+	menu_selection:   i32,
+	should_quit:      bool,
 	screen_width:     i32,
 	screen_height:    i32,
 }
