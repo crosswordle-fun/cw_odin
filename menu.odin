@@ -1,6 +1,5 @@
 package main
 
-import "core:math"
 import rl "vendor:raylib"
 
 MenuLayout :: struct {
@@ -173,7 +172,6 @@ build_menu_mode_view :: proc(
 	)
 
 	border_x, border_y, border_width, border_height := menu_selection_rect(layout, selection)
-	selection_pulse := 0.5 + 0.5 * math.sin(ui.time * 6)
 	push_rect_lines(
 		&frame.overlay,
 		border_x,
@@ -182,15 +180,6 @@ build_menu_mode_view :: proc(
 		border_height,
 		3,
 		rl.BLACK,
-	)
-	push_rect_lines(
-		&frame.overlay,
-		border_x + 3,
-		border_y + 3,
-		border_width - 6,
-		border_height - 6,
-		2,
-		with_alpha(theme.text, u8(150 + selection_pulse * 80)),
 	)
 	draw_ui_effects(&frame.overlay, ctx, ui)
 }

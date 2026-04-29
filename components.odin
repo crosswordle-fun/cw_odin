@@ -187,7 +187,6 @@ build_tile_or_square :: proc(
 
 	push_rect(buffer, x, y, size, size, empty_color)
 	push_rect_lines(buffer, x, y, size, size, 2, rl.BLACK)
-	push_rect_lines(buffer, x + 2, y + 2, size - 4, size - 4, 2, with_alpha(theme.surface_shadow, 82))
 }
 
 TitleTile :: struct {
@@ -228,7 +227,6 @@ build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
 	)
 	push_rect(buffer, tile.x, face_y, tile.face_size, tile.face_size, tile.face_color)
 	push_rect_lines(buffer, tile.x, face_y, tile.face_size, tile.face_size, 2, rl.BLACK)
-	push_rect_lines(buffer, tile.x + 2, face_y + 2, tile.face_size - 4, tile.face_size - 4, 2, with_alpha(rl.WHITE, 76))
 
 	if tile.letter != 0 {
 		label := fmt.caprintf("%c", tile.letter)
@@ -303,7 +301,6 @@ build_button :: proc(
 	}
 	push_rect(buffer, x, y - lift, width, height, fill)
 	push_rect_lines(buffer, x, y - lift, width, height, 2, rl.BLACK)
-	push_rect_lines(buffer, x + 2, y - lift + 2, width - 4, height - 4, 2, with_alpha(rl.WHITE, 86))
 
 	text_color := theme.button_text
 	if active do text_color = theme.button_text_inverted
@@ -506,7 +503,6 @@ build_crossword_grid :: proc(
 			if covered_by_selector do continue
 			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, theme.empty_tile)
 			push_rect_lines(buffer, x, y, grid.cell_size, grid.cell_size, 2, rl.BLACK)
-			push_rect_lines(buffer, x + 2, y + 2, grid.cell_size - 4, grid.cell_size - 4, 1, with_alpha(theme.surface_shadow, 62))
 		}
 	}
 }
