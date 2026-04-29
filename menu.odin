@@ -147,6 +147,7 @@ build_menu_mode_view :: proc(
 	panel_h := layout.exit_y + layout.button_height - panel_y + scaled_i32(28, ctx.scale)
 	push_rect(&frame.ui, panel_x, panel_y + scaled_i32(8, ctx.scale), panel_w, panel_h, with_alpha(theme.surface_shadow, 74))
 	push_rect(&frame.ui, panel_x, panel_y, panel_w, panel_h, with_alpha(theme.surface, 230))
+	push_rect_lines(&frame.ui, panel_x, panel_y, panel_w, panel_h, 2, rl.BLACK)
 	build_menu_title(&frame.ui, layout, theme, ui)
 	build_button(
 		&frame.ui,
@@ -180,6 +181,15 @@ build_menu_mode_view :: proc(
 		border_width,
 		border_height,
 		3,
+		rl.BLACK,
+	)
+	push_rect_lines(
+		&frame.overlay,
+		border_x + 3,
+		border_y + 3,
+		border_width - 6,
+		border_height - 6,
+		2,
 		with_alpha(theme.text, u8(150 + selection_pulse * 80)),
 	)
 	draw_ui_effects(&frame.overlay, ctx, ui)
