@@ -181,7 +181,7 @@ push_letter_tile :: proc(
 				text = label,
 				rect = rl.Rectangle{f32(text_x), f32(text_y), 0, 0},
 				font_size = font_size,
-				color = rl.WHITE,
+					color = THEME_TEXT,
 			},
 		)
 	}
@@ -218,4 +218,3 @@ flush_render_frame :: proc(frame: RenderFrame) {
 	flush_render_buffer(frame.ui)
 	flush_render_buffer(frame.overlay)
 }
-

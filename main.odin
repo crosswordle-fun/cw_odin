@@ -49,7 +49,7 @@ main :: proc() {
 		if state.should_quit do break
 
 		rl.BeginTextureMode(render_target)
-		rl.ClearBackground(rl.Color{20, 20, 24, 255})
+		rl.ClearBackground(THEME_BACKGROUND)
 		flush_render_frame(render_frame)
 		rl.EndTextureMode()
 
@@ -69,8 +69,8 @@ main :: proc() {
 		dest := rl.Rectangle{dst_x, dst_y, dst_w, dst_h}
 
 		rl.BeginDrawing()
-		rl.ClearBackground(rl.BLACK)
-		rl.DrawTexturePro(render_target.texture, source, dest, rl.Vector2{0, 0}, 0, rl.WHITE)
+		rl.ClearBackground(THEME_CANVAS)
+		rl.DrawTexturePro(render_target.texture, source, dest, rl.Vector2{0, 0}, 0, THEME_TEXT)
 		rl.EndDrawing()
 	}
 }

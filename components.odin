@@ -56,7 +56,7 @@ build_tile :: proc(
 		u8(f32(color[2]) * 0.72),
 		color[3],
 	}
-	build_layered_tile(buffer, x, y - grid_tile_base_height(size), size, letter, color, base_color, font_size, rl.WHITE)
+	build_layered_tile(buffer, x, y - grid_tile_base_height(size), size, letter, color, base_color, font_size, THEME_TEXT)
 }
 
 TitleTile :: struct {
@@ -130,12 +130,12 @@ build_button :: proc(
 	active: bool,
 ) {
 	if active {
-		push_rect(buffer, x, y, width, height, rl.WHITE)
+		push_rect(buffer, x, y, width, height, THEME_TEXT)
 	}
 
-	text_color := rl.WHITE
+	text_color := THEME_TEXT
 	if active {
-		text_color = rl.Color{20, 20, 24, 255}
+		text_color = THEME_TEXT_INVERTED
 	}
 
 	build_centered_text_in_rect(buffer, label, x, y, width, height, font_size, text_color)
@@ -217,14 +217,14 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32) {
 	x := scaled_i32(24, ctx.scale)
 	y := scaled_i32(24, ctx.scale)
 	label := fmt.caprintf("EXP %d", exp)
-	build_text(buffer, label, x, y, font_size, rl.GOLD)
+	build_text(buffer, label, x, y, font_size, THEME_EXP)
 }
 
 build_wordle_level :: proc(buffer: ^RenderBuffer, ctx: RenderContext, level: u32) {
 	font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
 	y := scaled_i32(BASE_WORDLE_LEVEL_Y, ctx.scale)
 	label := fmt.caprintf("Level %d", level + 1)
-	build_centered_text(buffer, label, ctx.screen_width, y, font_size, rl.WHITE)
+	build_centered_text(buffer, label, ctx.screen_width, y, font_size, THEME_TEXT)
 }
 
 build_inventory_counts :: proc(
@@ -269,10 +269,10 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid) {
 				y - base_height,
 				grid.cell_size,
 				grid.runes[i],
-				rl.PURPLE,
-				rl.DARKPURPLE,
+				THEME_HIGHLIGHT_RUNE,
+				THEME_HIGHLIGHT_RUNE_SHADOW,
 				font_size,
-				rl.WHITE,
+				THEME_TEXT,
 			)
 		} else if grid.frags[i] != 0 {
 			build_layered_tile(
@@ -281,13 +281,13 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid) {
 				y - base_height,
 				grid.cell_size,
 				grid.frags[i],
-				rl.SKYBLUE,
-				rl.DARKBLUE,
+				THEME_HIGHLIGHT_FRAGMENT,
+				THEME_HIGHLIGHT_FRAGMENT_SHADOW,
 				font_size,
-				rl.WHITE,
+				THEME_TEXT,
 			)
 		} else {
-			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, rl.DARKGRAY)
+			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, THEME_EMPTY_TILE)
 		}
 	}
 }
@@ -299,8 +299,8 @@ build_crossword_selector_overlay :: proc(
 	selector_buffer: SelectorBuffer,
 	show_frags: bool,
 ) {
-	line_color := rl.SKYBLUE
-	if !show_frags do line_color = rl.PURPLE
+	line_color := THEME_HIGHLIGHT_FRAGMENT
+	if !show_frags do line_color = THEME_HIGHLIGHT_RUNE
 
 	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
 	font_size := scaled_i32(BASE_SELECTOR_FONT_SIZE, scale)
@@ -328,23 +328,23 @@ build_crossword_selector_overlay :: proc(
 			tile_x + grid.cell_size - font_size - label_offset,
 			tile_y + grid.cell_size - font_size - label_offset,
 			font_size,
-			rl.WHITE,
+			THEME_TEXT,
 		)
 	}
 }
 
 wordle_feedback_color :: proc(feedback: WordleFeedback) -> rl.Color {
 	switch feedback {
-	case .Correct:
-		return rl.GREEN
-	case .Present:
-		return rl.GOLD
-	case .Miss:
-		return rl.GRAY
-	case .Empty:
-		return rl.DARKGRAY
+case .Correct:
+		return THEME_WORDLE_CORRECT
+case .Present:
+		return THEME_WORDLE_PRESENT
+case .Miss:
+		return THEME_WORDLE_MISS
+case .Empty:
+		return THEME_WORDLE_EMPTY
 	}
-	return rl.DARKGRAY
+	return THEME_WORDLE_EMPTY
 }
 
 build_wordle_guess_row :: proc(
@@ -381,7 +381,7 @@ build_wordle_current_row :: proc(
 ) {
 	for col in 0 ..< WORDLE_WORD_LEN {
 		tile_x := x + i32(col) * (cell_size + gap)
-		build_tile(buffer, tile_x, y, cell_size, current_guess[col], rl.DARKGRAY, font_size)
+		build_tile(buffer, tile_x, y, cell_size, current_guess[col], THEME_WORDLE_EMPTY, font_size)
 	}
 }
 
@@ -453,14 +453,14 @@ build_wordle_history_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wo
 		margin +
 		(history_reward_size - scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)) / 2
 	exp_label := fmt.caprintf("+%d EXP", record.reward_exp)
-	build_text(buffer, exp_label, exp_x, exp_y, scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale), rl.GOLD)
+	build_text(buffer, exp_label, exp_x, exp_y, scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale), THEME_EXP)
 	build_tile(
 		buffer,
 		ctx.screen_width - history_reward_size - margin,
 		ctx.screen_height - history_reward_size - margin,
 		history_reward_size,
 		record.reward_fragment,
-		rl.SKYBLUE,
+		THEME_HIGHLIGHT_FRAGMENT,
 		history_reward_font_size,
 	)
 }
@@ -485,7 +485,7 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 		ctx.screen_width,
 		title_y,
 		scaled_i32(BASE_TITLE_FONT_SIZE, ctx.scale),
-		rl.WHITE,
+		THEME_TEXT,
 	)
 	build_centered_text(
 		buffer,
@@ -493,7 +493,7 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 		ctx.screen_width,
 		subtitle_y,
 		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-		rl.LIGHTGRAY,
+		THEME_TEXT_MUTED,
 	)
 
 	for col in 0 ..< WORDLE_WORD_LEN {
@@ -504,7 +504,7 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 			start_y,
 			cell_size,
 			wordle.win_solution[col],
-			rl.GREEN,
+			THEME_WORDLE_CORRECT,
 			font_size,
 		)
 	}
@@ -515,7 +515,7 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 		ctx.screen_width,
 		reward_label_y,
 		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-		rl.SKYBLUE,
+		THEME_HIGHLIGHT_FRAGMENT,
 	)
 	build_tile(
 		buffer,
@@ -523,7 +523,7 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 		reward_y,
 		cell_size,
 		wordle.reward_fragment,
-		rl.SKYBLUE,
+		THEME_HIGHLIGHT_FRAGMENT,
 		font_size,
 	)
 	reward_detail := fmt.caprintf("+%d EXP", wordle.reward_exp)
@@ -533,7 +533,7 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 		ctx.screen_width,
 		reward_detail_y,
 		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-		rl.GOLD,
+		THEME_EXP,
 	)
 }
 
@@ -588,14 +588,14 @@ crafting_status_label :: proc(crafting: CraftingState) -> cstring {
 build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	build_mode_tabs(&frame.ui, ctx, state.view)
 	build_exp_hud(&frame.ui, ctx, state.exp)
-	build_title(&frame.ui, ctx, "Crafting", scaled_i32(105, ctx.scale), rl.WHITE)
+	build_title(&frame.ui, ctx, "Crafting", scaled_i32(105, ctx.scale), THEME_TEXT)
 	build_centered_text(
 		&frame.ui,
 		"Fragments",
 		ctx.screen_width,
 		scaled_i32(170, ctx.scale),
 		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-		rl.SKYBLUE,
+		THEME_HIGHLIGHT_FRAGMENT,
 	)
 
 	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
@@ -611,8 +611,8 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 
 	for i in 0 ..< len(state.crafting.selected) {
 		tile_x := start_x + i32(i) * (cell_size + gap)
-		color := rl.DARKGRAY
-		if i32(i) < state.crafting.count do color = rl.SKYBLUE
+		color := THEME_EMPTY_TILE
+		if i32(i) < state.crafting.count do color = THEME_HIGHLIGHT_FRAGMENT
 		build_tile(
 			&frame.world,
 			tile_x,
@@ -630,7 +630,7 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		ctx.screen_width,
 		status_y,
 		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-		rl.LIGHTGRAY,
+		THEME_TEXT_MUTED,
 	)
 
 	build_centered_text(
@@ -639,7 +639,7 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		ctx.screen_width,
 		output_label_y,
 		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-		rl.PURPLE,
+		THEME_HIGHLIGHT_RUNE,
 	)
 	build_tile(
 		&frame.world,
@@ -647,7 +647,7 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		output_y,
 		cell_size,
 		state.crafting.crafted_rune,
-		rl.PURPLE,
+		THEME_HIGHLIGHT_RUNE,
 		font_size,
 	)
 	if state.crafting.crafted_rune != 0 {
@@ -658,15 +658,15 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 			ctx.screen_width,
 			output_exp_y,
 			scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-			rl.GOLD,
+			THEME_EXP,
 		)
 	}
 
 	inventory_counts := state.frag_counts
-	inventory_color := rl.SKYBLUE
+	inventory_color := THEME_HIGHLIGHT_FRAGMENT
 	if !state.show_frags {
 		inventory_counts = state.rune_counts
-		inventory_color = rl.PURPLE
+		inventory_color = THEME_HIGHLIGHT_RUNE
 	}
 	build_inventory_counts(&frame.ui, ctx, inventory_counts, inventory_color)
 }
@@ -696,15 +696,15 @@ build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^G
 			state.screen_width,
 			reward_y,
 			scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-			rl.GOLD,
+			THEME_EXP,
 		)
 	}
 
 	inventory_counts := state.frag_counts
-	inventory_color := rl.SKYBLUE
+	inventory_color := THEME_HIGHLIGHT_FRAGMENT
 	if !state.show_frags {
 		inventory_counts = state.rune_counts
-		inventory_color = rl.PURPLE
+		inventory_color = THEME_HIGHLIGHT_RUNE
 	}
 	build_inventory_counts(&frame.ui, ctx, inventory_counts, inventory_color)
 }

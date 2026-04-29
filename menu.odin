@@ -102,8 +102,8 @@ menu_selection_rect :: proc(layout: MenuLayout, selection: MenuSelection) -> (x:
 
 build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout) {
 	title_label := "CROSSWORDLE"
-	face_color := rl.GRAY
-	base_color := rl.DARKGRAY
+	face_color := THEME_SURFACE
+	base_color := THEME_SURFACE_SHADOW
 
 	x := layout.title_x
 	for i in 0 ..< len(title_label) {
@@ -117,7 +117,7 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout) {
 				face_color = face_color,
 				base_color = base_color,
 				font_size = layout.title_font_size,
-				text_color = rl.WHITE,
+				text_color = THEME_TEXT,
 			},
 		)
 		x += layout.title_face_size + layout.title_gap
@@ -161,7 +161,7 @@ build_menu_mode_view :: proc(
 		border_width,
 		border_height,
 		3,
-		rl.WHITE,
+		THEME_TEXT,
 	)
 }
 
