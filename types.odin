@@ -1,6 +1,6 @@
 package main
 
-import rl "raylib"
+import rl "vendor:raylib"
 
 VIRTUAL_SCREEN_WIDTH :: 1280
 VIRTUAL_SCREEN_HEIGHT :: 720

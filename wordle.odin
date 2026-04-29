@@ -1,6 +1,6 @@
 package main
 
-import rl "raylib"
+import rl "vendor:raylib"
 
 wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)

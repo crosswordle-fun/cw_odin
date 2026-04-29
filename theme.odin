@@ -1,6 +1,6 @@
 package main
 
-import rl "raylib"
+import rl "vendor:raylib"
 
 Theme :: struct {
 	background:                rl.Color,

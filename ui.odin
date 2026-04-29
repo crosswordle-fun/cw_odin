@@ -2,7 +2,7 @@ package main
 
 import "core:fmt"
 import "core:math"
-import rl "raylib"
+import rl "vendor:raylib"
 
 saturate :: proc(value: f32) -> f32 {
 	if value < 0 do return 0

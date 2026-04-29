@@ -1,7 +1,7 @@
 package main
 
 import "core:math"
-import rl "raylib"
+import rl "vendor:raylib"
 
 MenuLayout :: struct {
 	title_x:         i32,

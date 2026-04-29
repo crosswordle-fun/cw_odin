@@ -1,7 +1,7 @@
 package main
 
 import "core:math"
-import rl "raylib"
+import rl "vendor:raylib"
 
 main :: proc() {
 	rl.SetTargetFPS(60)

@@ -2,7 +2,7 @@ package main
 
 import "core:fmt"
 import "core:math"
-import rl "raylib"
+import rl "vendor:raylib"
 
 build_text :: proc(
 	buffer: ^RenderBuffer,

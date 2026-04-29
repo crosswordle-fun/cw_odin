@@ -1,7 +1,7 @@
 package main
 
 import "core:math"
-import rl "raylib"
+import rl "vendor:raylib"
 
 read_pressed_letter :: proc() -> (letter: rune, ok: bool) {
 	for {

@@ -1,6 +1,6 @@
 package main
 
-import rl "raylib"
+import rl "vendor:raylib"
 
 cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.ZERO) do game_increment_frags_and_runes(state)

@@ -1,7 +1,7 @@
 package main
 
 import "core:fmt"
-import rl "raylib"
+import rl "vendor:raylib"
 
 RENDER_BUFFER_CAPACITY :: 2048
 
