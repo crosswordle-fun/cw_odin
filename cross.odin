@@ -70,7 +70,7 @@ cross_update_selector_movement :: proc(state: ^GameState, dt: f32) {
 		row_delta, col_delta, ok := cross_key_delta(key)
 		if ok {
 			selector_move(&state.selector, row_delta, col_delta, state.grid)
-			grid_update_viewport(&state.grid, state.selector)
+			grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
 		}
 	}
 }
@@ -80,15 +80,20 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 
 	cross_update_selector_movement(state, ctx.dt)
 
-	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) do selector_toggle_direction(&state.selector)
+	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
+		selector_toggle_direction(&state.selector)
+		grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
+	}
 
 	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
 		selector_buffer_pop(&state.selector_buffer)
+		grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
 	} else {
 		for {
 			letter, ok := read_pressed_letter()
 			if !ok do break
 			selector_buffer_push_letter(&state.selector_buffer, letter)
+			grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
 		}
 	}
 
@@ -215,6 +220,7 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 						ui_spawn_burst(&state.ui, burst_x, burst_y, reward_color, 10)
 					}
 					selector_buffer_clear(&state.selector_buffer)
+					grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
 				} else {
 					ui_note_invalid(&state.ui)
 				}

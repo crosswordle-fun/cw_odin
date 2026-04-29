@@ -616,14 +616,7 @@ build_crossword_coord_label :: proc(
 	font_size := scaled_i32(10, scale)
 	padding := scaled_i32(3, scale)
 	label := fmt.caprintf("%d,%d", col, row)
-	build_text(
-		buffer,
-		label,
-		x + padding,
-		y + padding,
-		font_size,
-		with_alpha(theme.text, 180),
-	)
+	build_text(buffer, label, x + padding, y + padding, font_size, with_alpha(theme.text, 180))
 }
 
 build_crossword_grid :: proc(

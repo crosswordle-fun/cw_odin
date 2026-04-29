@@ -44,21 +44,6 @@ grid_tile_index :: proc(grid: Grid, row: i32, col: i32) -> i32 {
 	return row * grid.cols + col
 }
 
-grid_tile_position :: proc(grid: Grid, row: i32, col: i32) -> (x: i32, y: i32) {
-	x = grid.offset_x + (col - grid.view_col) * (grid.cell_size + grid.gap)
-	y = grid.offset_y + (row - grid.view_row) * grid_row_step(grid)
-	return
-}
-
-grid_tile_visible :: proc(grid: Grid, row: i32, col: i32) -> bool {
-	return(
-		row >= grid.view_row &&
-		row < grid.view_row + grid.view_rows &&
-		col >= grid.view_col &&
-		col < grid.view_col + grid.view_cols \
-	)
-}
-
 grid_wrap_row :: proc(grid: Grid, row: i32) -> i32 {
 	if grid.rows <= 0 do return 0
 	wrapped := row % grid.rows
@@ -71,6 +56,42 @@ grid_wrap_col :: proc(grid: Grid, col: i32) -> i32 {
 	wrapped := col % grid.cols
 	if wrapped < 0 do wrapped += grid.cols
 	return wrapped
+}
+
+grid_axis_visible_offset :: proc(
+	origin: i32,
+	visible_count: i32,
+	total_count: i32,
+	coord: i32,
+) -> (
+	offset: i32,
+	ok: bool,
+) {
+	if total_count <= 0 || visible_count <= 0 do return 0, false
+	if visible_count >= total_count do return clamp(coord, 0, total_count - 1), true
+
+	wrapped_coord := coord % total_count
+	if wrapped_coord < 0 do wrapped_coord += total_count
+	wrapped_origin := origin % total_count
+	if wrapped_origin < 0 do wrapped_origin += total_count
+
+	offset = wrapped_coord - wrapped_origin
+	if offset < 0 do offset += total_count
+	return offset, offset < visible_count
+}
+
+grid_tile_position :: proc(grid: Grid, row: i32, col: i32) -> (x: i32, y: i32) {
+	col_offset, _ := grid_axis_visible_offset(grid.view_col, grid.view_cols, grid.cols, col)
+	row_offset, _ := grid_axis_visible_offset(grid.view_row, grid.view_rows, grid.rows, row)
+	x = grid.offset_x + col_offset * (grid.cell_size + grid.gap)
+	y = grid.offset_y + row_offset * grid_row_step(grid)
+	return
+}
+
+grid_tile_visible :: proc(grid: Grid, row: i32, col: i32) -> bool {
+	_, row_visible := grid_axis_visible_offset(grid.view_row, grid.view_rows, grid.rows, row)
+	_, col_visible := grid_axis_visible_offset(grid.view_col, grid.view_cols, grid.cols, col)
+	return row_visible && col_visible
 }
 
 selector_letter_position :: proc(
@@ -174,7 +195,7 @@ game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_h
 	if state.grid.gap < 1 do state.grid.gap = 1
 	state.grid.view_cols = min(state.grid.cols, GRID_VIEWPORT_MAX)
 	state.grid.view_rows = min(state.grid.rows, GRID_VIEWPORT_MAX)
-	grid_update_viewport(&state.grid, state.selector)
+	grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
 	state.grid.screen_width = virtual_width
 	state.grid.screen_height = virtual_height
 	state.grid.offset_x = (virtual_width - grid_pixel_width(state.grid)) / 2
@@ -192,39 +213,88 @@ grid_center_viewport :: proc(grid: ^Grid, selector: Selector) {
 	grid.view_cols = min(grid.cols, GRID_VIEWPORT_MAX)
 	grid.view_rows = min(grid.rows, GRID_VIEWPORT_MAX)
 
-	max_view_col := grid.cols - grid.view_cols
-	max_view_row := grid.rows - grid.view_rows
-	if max_view_col < 0 do max_view_col = 0
-	if max_view_row < 0 do max_view_row = 0
-
-	grid.view_col = clamp(selector.col - grid.view_cols / 2, 0, max_view_col)
-	grid.view_row = clamp(selector.row - grid.view_rows / 2, 0, max_view_row)
+	if grid.cols > grid.view_cols {
+		grid.view_col = grid_wrap_col(grid^, selector.col - grid.view_cols / 2)
+	} else {
+		grid.view_col = 0
+	}
+	if grid.rows > grid.view_rows {
+		grid.view_row = grid_wrap_row(grid^, selector.row - grid.view_rows / 2)
+	} else {
+		grid.view_row = 0
+	}
 }
 
-grid_update_viewport :: proc(grid: ^Grid, selector: Selector) {
+grid_update_viewport :: proc(grid: ^Grid, selector: Selector, preview_count: i32) {
 	grid.view_cols = min(grid.cols, GRID_VIEWPORT_MAX)
 	grid.view_rows = min(grid.rows, GRID_VIEWPORT_MAX)
 
-	max_view_col := grid.cols - grid.view_cols
-	max_view_row := grid.rows - grid.view_rows
-	if max_view_col < 0 do max_view_col = 0
-	if max_view_row < 0 do max_view_row = 0
-
-	if selector.col >= grid.view_col + grid.view_cols - 1 {
-		grid.view_col = selector.col - grid.view_cols + 2
-	}
-	if selector.col <= grid.view_col {
-		grid.view_col = selector.col - 1
-	}
-	if selector.row >= grid.view_row + grid.view_rows - 1 {
-		grid.view_row = selector.row - grid.view_rows + 2
-	}
-	if selector.row <= grid.view_row {
-		grid.view_row = selector.row - 1
+	span_rows := i32(1)
+	span_cols := i32(1)
+	if preview_count > 0 {
+		if selector.down {
+			span_rows = min(preview_count, grid.rows)
+		} else {
+			span_cols = min(preview_count, grid.cols)
+		}
 	}
 
-	grid.view_col = clamp(grid.view_col, 0, max_view_col)
-	grid.view_row = clamp(grid.view_row, 0, max_view_row)
+	row_start := selector.row
+	row_end := selector.row + span_rows - 1
+	col_start := selector.col
+	col_end := selector.col + span_cols - 1
+
+	if grid.cols > grid.view_cols {
+		col_start_offset, _ := grid_axis_visible_offset(
+			grid.view_col,
+			grid.view_cols,
+			grid.cols,
+			col_start,
+		)
+		col_end_offset, _ := grid_axis_visible_offset(
+			grid.view_col,
+			grid.view_cols,
+			grid.cols,
+			col_end,
+		)
+		if col_end_offset >= grid.view_cols - 1 {
+			grid.view_col = grid_wrap_col(
+				grid^,
+				grid.view_col + col_end_offset - grid.view_cols + 2,
+			)
+		}
+		if col_start_offset <= 0 {
+			grid.view_col = grid_wrap_col(grid^, grid.view_col + col_start_offset - 1)
+		}
+	} else {
+		grid.view_col = 0
+	}
+
+	if grid.rows > grid.view_rows {
+		row_start_offset, _ := grid_axis_visible_offset(
+			grid.view_row,
+			grid.view_rows,
+			grid.rows,
+			row_start,
+		)
+		row_end_offset, _ := grid_axis_visible_offset(
+			grid.view_row,
+			grid.view_rows,
+			grid.rows,
+			row_end,
+		)
+		if row_end_offset >= grid.view_rows - 1 {
+			grid.view_row = grid_wrap_row(
+				grid^,
+				grid.view_row + row_end_offset - grid.view_rows + 2,
+			)
+		}
+		if row_start_offset <= 0 {
+			grid.view_row = grid_wrap_row(grid^, grid.view_row + row_start_offset - 1)
+		}
+	} else {
+		grid.view_row = 0
+	}
 }
 
 selector_set_tile :: proc(selector: ^Selector, row: i32, col: i32) {
