@@ -59,6 +59,20 @@ grid_tile_visible :: proc(grid: Grid, row: i32, col: i32) -> bool {
 	)
 }
 
+grid_wrap_row :: proc(grid: Grid, row: i32) -> i32 {
+	if grid.rows <= 0 do return 0
+	wrapped := row % grid.rows
+	if wrapped < 0 do wrapped += grid.rows
+	return wrapped
+}
+
+grid_wrap_col :: proc(grid: Grid, col: i32) -> i32 {
+	if grid.cols <= 0 do return 0
+	wrapped := col % grid.cols
+	if wrapped < 0 do wrapped += grid.cols
+	return wrapped
+}
+
 selector_letter_position :: proc(
 	grid: Grid,
 	selector: Selector,
@@ -74,6 +88,8 @@ selector_letter_position :: proc(
 	} else {
 		col += offset
 	}
+	row = grid_wrap_row(grid, row)
+	col = grid_wrap_col(grid, col)
 	return
 }
 
@@ -141,7 +157,7 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 		screen_width   = virtual_width,
 		screen_height  = virtual_height,
 	}
-	grid_update_viewport(&state.grid, state.selector)
+	grid_center_viewport(&state.grid, state.selector)
 	game_update_screen_size(&state, virtual_width, virtual_height)
 	return state
 }
@@ -168,8 +184,21 @@ game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_h
 }
 
 selector_move :: proc(selector: ^Selector, row_delta: i32, col_delta: i32, grid: Grid) {
-	selector.row = clamp(selector.row + row_delta, 0, grid.rows - 1)
-	selector.col = clamp(selector.col + col_delta, 0, grid.cols - 1)
+	selector.row = grid_wrap_row(grid, selector.row + row_delta)
+	selector.col = grid_wrap_col(grid, selector.col + col_delta)
+}
+
+grid_center_viewport :: proc(grid: ^Grid, selector: Selector) {
+	grid.view_cols = min(grid.cols, GRID_VIEWPORT_MAX)
+	grid.view_rows = min(grid.rows, GRID_VIEWPORT_MAX)
+
+	max_view_col := grid.cols - grid.view_cols
+	max_view_row := grid.rows - grid.view_rows
+	if max_view_col < 0 do max_view_col = 0
+	if max_view_row < 0 do max_view_row = 0
+
+	grid.view_col = clamp(selector.col - grid.view_cols / 2, 0, max_view_col)
+	grid.view_row = clamp(selector.row - grid.view_rows / 2, 0, max_view_row)
 }
 
 grid_update_viewport :: proc(grid: ^Grid, selector: Selector) {
@@ -411,7 +440,7 @@ game_apply_data_reload :: proc(state: ^GameState) {
 	delete(old_grid.frag_exp)
 	delete(old_grid.rune_exp)
 	selector_move(&state.selector, 0, 0, state.grid)
-	grid_update_viewport(&state.grid, state.selector)
+	grid_center_viewport(&state.grid, state.selector)
 	state.selector_buffer.count = min(
 		state.selector_buffer.count,
 		game_data.crafting.selection_capacity,

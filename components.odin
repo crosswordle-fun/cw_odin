@@ -604,6 +604,28 @@ build_active_inventory_counts :: proc(
 	build_inventory_counts(buffer, ctx, inventory_counts, inventory_color)
 }
 
+build_crossword_coord_label :: proc(
+	buffer: ^RenderBuffer,
+	grid: Grid,
+	row: i32,
+	col: i32,
+	theme: Theme,
+) {
+	x, y := grid_tile_position(grid, row, col)
+	scale := f32(grid.cell_size) / f32(game_data.grid.cell_size)
+	font_size := scaled_i32(10, scale)
+	padding := scaled_i32(3, scale)
+	label := fmt.caprintf("%d,%d", col, row)
+	build_text(
+		buffer,
+		label,
+		x + padding,
+		y + padding,
+		font_size,
+		with_alpha(theme.text, 180),
+	)
+}
+
 build_crossword_grid :: proc(
 	buffer: ^RenderBuffer,
 	grid: Grid,
@@ -656,10 +678,12 @@ build_crossword_grid :: proc(
 				pop_scale,
 			)
 		} else {
-			if covered_by_selector do continue
-			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, theme.empty_tile)
-			push_rect_lines(buffer, x, y, grid.cell_size, grid.cell_size, 2, theme.outline)
+			if !covered_by_selector {
+				push_rect(buffer, x, y, grid.cell_size, grid.cell_size, theme.empty_tile)
+				push_rect_lines(buffer, x, y, grid.cell_size, grid.cell_size, 2, theme.outline)
+			}
 		}
+		build_crossword_coord_label(buffer, grid, tile.row, tile.col, theme)
 	}
 }
 
@@ -699,6 +723,7 @@ build_crossword_selector_overlay :: proc(
 			theme.text,
 			preview_outline,
 		)
+		build_crossword_coord_label(buffer, grid, selector.row, selector.col, theme)
 	}
 
 	for i in 0 ..< selector_buffer.count {
@@ -719,6 +744,7 @@ build_crossword_selector_overlay :: proc(
 			theme.text,
 			preview_outline,
 		)
+		build_crossword_coord_label(buffer, grid, row, col, theme)
 	}
 }
 

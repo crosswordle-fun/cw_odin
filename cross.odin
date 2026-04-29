@@ -96,9 +96,9 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 		if state.selector_buffer.count > 0 {
 			fits := true
 			if state.selector.down {
-				if state.selector.row + state.selector_buffer.count > state.grid.rows do fits = false
+				if state.selector_buffer.count > state.grid.rows do fits = false
 			} else {
-				if state.selector.col + state.selector_buffer.count > state.grid.cols do fits = false
+				if state.selector_buffer.count > state.grid.cols do fits = false
 			}
 
 			if fits {
