@@ -16,7 +16,6 @@ tile_row_step :: proc(cell_size: i32, gap: i32) -> i32 {
 	return cell_size + gap + grid_tile_base_height(cell_size)
 }
 
-GRID_VIEWPORT_MAX :: i32(7)
 CROSS_MOVE_REPEAT_DELAY :: f32(0.22)
 CROSS_MOVE_REPEAT_INTERVAL :: f32(0.08)
 
@@ -25,6 +24,14 @@ screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
 	scale_y := f32(screen_height) / f32(game_data.screen.virtual_height)
 	if scale_y < scale_x do return scale_y
 	return scale_x
+}
+
+grid_visible_cols :: proc(grid: Grid) -> i32 {
+	return min(grid.cols, game_data.grid.visible_cols)
+}
+
+grid_visible_rows :: proc(grid: Grid) -> i32 {
+	return min(grid.rows, game_data.grid.visible_rows)
 }
 
 grid_pixel_width :: proc(grid: Grid) -> i32 {
@@ -132,8 +139,8 @@ grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
 		rune_exp      = make([]u32, tile_count),
 		cols          = game_data.grid.cols,
 		rows          = game_data.grid.rows,
-		view_cols     = min(game_data.grid.cols, GRID_VIEWPORT_MAX),
-		view_rows     = min(game_data.grid.rows, GRID_VIEWPORT_MAX),
+		view_cols     = min(game_data.grid.cols, game_data.grid.visible_cols),
+		view_rows     = min(game_data.grid.rows, game_data.grid.visible_rows),
 		cell_size     = game_data.grid.cell_size,
 		gap           = game_data.grid.gap,
 		screen_width  = virtual_width,
@@ -193,8 +200,8 @@ game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_h
 	if state.grid.cell_size < 1 do state.grid.cell_size = 1
 	state.grid.gap = i32(f32(game_data.grid.gap) * scale + 0.5)
 	if state.grid.gap < 1 do state.grid.gap = 1
-	state.grid.view_cols = min(state.grid.cols, GRID_VIEWPORT_MAX)
-	state.grid.view_rows = min(state.grid.rows, GRID_VIEWPORT_MAX)
+	state.grid.view_cols = grid_visible_cols(state.grid)
+	state.grid.view_rows = grid_visible_rows(state.grid)
 	grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
 	state.grid.screen_width = virtual_width
 	state.grid.screen_height = virtual_height
@@ -210,8 +217,8 @@ selector_move :: proc(selector: ^Selector, row_delta: i32, col_delta: i32, grid:
 }
 
 grid_center_viewport :: proc(grid: ^Grid, selector: Selector) {
-	grid.view_cols = min(grid.cols, GRID_VIEWPORT_MAX)
-	grid.view_rows = min(grid.rows, GRID_VIEWPORT_MAX)
+	grid.view_cols = grid_visible_cols(grid^)
+	grid.view_rows = grid_visible_rows(grid^)
 
 	if grid.cols > grid.view_cols {
 		grid.view_col = grid_wrap_col(grid^, selector.col - grid.view_cols / 2)
@@ -226,8 +233,8 @@ grid_center_viewport :: proc(grid: ^Grid, selector: Selector) {
 }
 
 grid_update_viewport :: proc(grid: ^Grid, selector: Selector, preview_count: i32) {
-	grid.view_cols = min(grid.cols, GRID_VIEWPORT_MAX)
-	grid.view_rows = min(grid.rows, GRID_VIEWPORT_MAX)
+	grid.view_cols = grid_visible_cols(grid^)
+	grid.view_rows = grid_visible_rows(grid^)
 
 	span_rows := i32(1)
 	span_cols := i32(1)

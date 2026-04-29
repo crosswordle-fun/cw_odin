@@ -19,6 +19,8 @@ GameScreenData :: struct {
 GameGridData :: struct {
 	cols:          i32,
 	rows:          i32,
+	visible_cols:  i32,
+	visible_rows:  i32,
 	cell_size:     i32,
 	gap:           i32,
 	frag_tile_exp: u32,

@@ -13,7 +13,9 @@
   grid: {
     cols: 15,
     rows: 15,
-    cell_size: 64,
+    visible_cols: 9,
+    visible_rows: 5,
+    cell_size: 96,
     gap: 4,
     frag_tile_exp: 500,
     rune_tile_exp: 1000,

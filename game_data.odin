@@ -27,9 +27,13 @@ game_data_validate :: proc(data: ^GameData) -> (ok: bool) {
 	}
 	if data.grid.cols <= 0 ||
 	   data.grid.rows <= 0 ||
+	   data.grid.visible_cols <= 0 ||
+	   data.grid.visible_rows <= 0 ||
 	   data.grid.cell_size <= 0 ||
 	   data.grid.gap <= 0 {
-		fmt.eprintln("game_data: grid cols, rows, cell_size, and gap must be positive")
+		fmt.eprintln(
+			"game_data: grid cols, rows, visible_cols, visible_rows, cell_size, and gap must be positive",
+		)
 		return false
 	}
 	if len(data.grid.alphabet) == 0 || len(data.grid.alphabet) > LETTER_COUNT {
