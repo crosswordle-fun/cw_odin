@@ -1059,7 +1059,6 @@ crafting_status_label :: proc(crafting: CraftingState) -> cstring {
 }
 
 build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
-	build_title(&frame.ui, ctx, "CRAFTING", scaled_i32(105, ctx.scale), ctx.theme.text)
 	build_centered_text(
 		&frame.ui,
 		"FRAGMENTS",
