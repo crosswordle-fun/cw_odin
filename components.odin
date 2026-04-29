@@ -104,6 +104,33 @@ build_tile :: proc(
 	build_tile_scaled(buffer, x, y, size, letter, color, font_size, theme, 1)
 }
 
+build_tile_with_face_lift :: proc(
+	buffer: ^RenderBuffer,
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	color: rl.Color,
+	font_size: i32,
+	theme: Theme,
+	face_lift: i32,
+) {
+	base_color := rl.Color{
+		u8(f32(color[0]) * 0.72),
+		u8(f32(color[1]) * 0.72),
+		u8(f32(color[2]) * 0.72),
+		color[3],
+	}
+	build_layered_tile_with_face_lift(buffer, x, y - grid_tile_base_height(size), size, letter, color, base_color, font_size, theme.text, face_lift)
+}
+
+tile_click_lift :: proc(time: f32, lift: i32, phase: i32 = 0) -> i32 {
+	if lift <= 0 do return 0
+	step := i32(time / 0.5) + phase
+	if step % 2 == 0 do return -lift
+	return 0
+}
+
 build_tile_scaled :: proc(
 	buffer: ^RenderBuffer,
 	x: i32,
@@ -152,6 +179,7 @@ TitleTile :: struct {
 	x:          i32,
 	y:          i32,
 	face_size:  i32,
+	face_lift:  i32,
 	letter:     rune,
 	face_color: rl.Color,
 	base_color: rl.Color,
@@ -162,23 +190,26 @@ TitleTile :: struct {
 build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
 	base_height := tile.face_size / 10
 	if base_height < 1 do base_height = 1
+	base_overlap := -tile.face_lift + 1
+	if base_overlap < 1 do base_overlap = 1
+	face_y := tile.y + tile.face_lift
 
 	push_rect(
 		buffer,
 		tile.x,
-		tile.y + tile.face_size,
+		tile.y + tile.face_size - base_overlap,
 		tile.face_size,
-		base_height,
+		base_height + base_overlap,
 		tile.base_color,
 	)
-	push_rect(buffer, tile.x, tile.y, tile.face_size, tile.face_size, tile.face_color)
-	push_rect_lines(buffer, tile.x + 2, tile.y + 2, tile.face_size - 4, tile.face_size - 4, 2, with_alpha(rl.WHITE, 76))
+	push_rect(buffer, tile.x, face_y, tile.face_size, tile.face_size, tile.face_color)
+	push_rect_lines(buffer, tile.x + 2, face_y + 2, tile.face_size - 4, tile.face_size - 4, 2, with_alpha(rl.WHITE, 76))
 
 	if tile.letter != 0 {
 		label := fmt.caprintf("%c", tile.letter)
 		text_width := rl.MeasureText(label, tile.font_size)
 		text_x := tile.x + (tile.face_size - text_width) / 2
-		text_y := tile.y + (tile.face_size - tile.font_size) / 2
+		text_y := face_y + (tile.face_size - tile.font_size) / 2
 		push_text(buffer, label, text_x, text_y, tile.font_size, tile.text_color)
 	}
 }
@@ -194,12 +225,28 @@ build_layered_tile :: proc(
 	font_size: i32,
 	text_color: rl.Color,
 ) {
+	build_layered_tile_with_face_lift(buffer, x, y, size, letter, face_color, base_color, font_size, text_color, 0)
+}
+
+build_layered_tile_with_face_lift :: proc(
+	buffer: ^RenderBuffer,
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	face_color: rl.Color,
+	base_color: rl.Color,
+	font_size: i32,
+	text_color: rl.Color,
+	face_lift: i32,
+) {
 	build_title_tile(
 		buffer,
 		TitleTile {
 			x = x,
 			y = y,
 			face_size = size,
+			face_lift = face_lift,
 			letter = letter,
 			face_color = face_color,
 			base_color = base_color,
@@ -525,8 +572,8 @@ build_wordle_current_row :: proc(
 	for col in 0 ..< WORDLE_WORD_LEN {
 		tile_x := x + i32(col) * (cell_size + gap) + shake
 		if current_guess[col] != 0 {
-			bounce := math.sin(ctx.time * 7 + f32(col) * 0.4) * 0.018
-			build_tile_scaled(buffer, tile_x, y, cell_size, current_guess[col], theme.wordle_empty, font_size, theme, 1 + bounce)
+			lift := tile_click_lift(ctx.time, grid_tile_base_height(cell_size))
+			build_tile_with_face_lift(buffer, tile_x, y, cell_size, current_guess[col], theme.wordle_empty, font_size, theme, lift)
 		} else {
 			build_tile_or_square(buffer, tile_x, y, cell_size, current_guess[col], theme.wordle_empty, theme.wordle_empty, font_size, theme)
 		}
@@ -647,7 +694,7 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 
 	for col in 0 ..< WORDLE_WORD_LEN {
 		tile_x := start_x + i32(col) * (cell_size + gap)
-		build_tile_scaled(
+		build_tile(
 			buffer,
 			tile_x,
 			start_y,
@@ -656,7 +703,6 @@ build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle
 			ctx.theme.wordle_correct,
 			font_size,
 			ctx.theme,
-			1 + math.sin(ctx.time * 4 + f32(col)) * 0.015,
 		)
 	}
 
@@ -771,10 +817,9 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		letter := state.crafting.selected[i]
 		color := ctx.theme.highlight_fragment
 		if i32(i) >= state.crafting.count do color = ctx.theme.empty_tile
-		slot_scale := f32(1)
-		if letter != 0 do slot_scale = 1 + math.sin(ctx.time * 6 + f32(i)) * 0.012
 		if letter != 0 {
-			build_tile_scaled(&frame.world, tile_x, selected_y, cell_size, letter, color, font_size, ctx.theme, slot_scale)
+			lift := tile_click_lift(ctx.time, grid_tile_base_height(cell_size), i32(i))
+			build_tile_with_face_lift(&frame.world, tile_x, selected_y, cell_size, letter, color, font_size, ctx.theme, lift)
 		} else {
 			build_tile_or_square(&frame.world, tile_x, selected_y, cell_size, letter, color, ctx.theme.empty_tile, font_size, ctx.theme)
 		}
