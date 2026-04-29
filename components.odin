@@ -338,47 +338,48 @@ build_mode_tabs :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameVie
 	wordle_text_width := measure_text_width(wordle_label, font_size)
 	cross_text_width := measure_text_width(cross_label, font_size)
 	crafting_text_width := measure_text_width(crafting_label, font_size)
-	wordle_width := wordle_text_width + padding_x * 2
-	cross_width := cross_text_width + padding_x * 2
-	crafting_width := crafting_text_width + padding_x * 2
-	total_width := wordle_width + title_gap + cross_width + title_gap + crafting_width
+	title_text_width := crafting_text_width
+	if wordle_text_width > title_text_width do title_text_width = wordle_text_width
+	if cross_text_width > title_text_width do title_text_width = cross_text_width
+	title_width := title_text_width + padding_x * 2
+	total_width := title_width * 3 + title_gap * 2
 	start_x := (ctx.screen_width - total_width) / 2
 
-	wordle_x := start_x
-	wordle_h := font_size + padding_y * 2
-		build_button(
-			buffer,
-			wordle_label,
-			wordle_x,
-			y - padding_y,
-			wordle_width,
-			wordle_h,
-			font_size,
-			view == .Wordle,
-			ctx.theme,
-		)
-
-	cross_x := start_x + wordle_width + title_gap
+	title_h := font_size + padding_y * 2
+	cross_x := start_x
 		build_button(
 			buffer,
 			cross_label,
 			cross_x,
 			y - padding_y,
-			cross_width,
-			wordle_h,
+			title_width,
+			title_h,
 			font_size,
 			view == .Cross,
 			ctx.theme,
 		)
 
-	crafting_x := cross_x + cross_width + title_gap
+	wordle_x := cross_x + title_width + title_gap
+		build_button(
+			buffer,
+			wordle_label,
+			wordle_x,
+			y - padding_y,
+			title_width,
+			title_h,
+			font_size,
+			view == .Wordle,
+			ctx.theme,
+		)
+
+	crafting_x := wordle_x + title_width + title_gap
 		build_button(
 			buffer,
 			crafting_label,
 			crafting_x,
 			y - padding_y,
-			crafting_width,
-			wordle_h,
+			title_width,
+			title_h,
 			font_size,
 			view == .Crafting,
 			ctx.theme,

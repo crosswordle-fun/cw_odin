@@ -19,6 +19,7 @@ main :: proc() {
 	defer rl.UnloadRenderTexture(render_target)
 
 	state := game_state_new(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT)
+	game_set_view(&state, .Menu)
 
 	for !rl.WindowShouldClose() {
 		dt := rl.GetFrameTime()
@@ -30,8 +31,8 @@ main :: proc() {
 			if escape_pressed {
 				game_set_view(&state, .Menu)
 			}
-			if rl.IsKeyPressed(rl.KeyboardKey.ONE) do game_set_view(&state, .Wordle)
-			if rl.IsKeyPressed(rl.KeyboardKey.TWO) do game_set_view(&state, .Cross)
+			if rl.IsKeyPressed(rl.KeyboardKey.ONE) do game_set_view(&state, .Cross)
+			if rl.IsKeyPressed(rl.KeyboardKey.TWO) do game_set_view(&state, .Wordle)
 			if rl.IsKeyPressed(rl.KeyboardKey.THREE) do game_set_view(&state, .Crafting)
 		} else if escape_pressed {
 			state.should_quit = true
@@ -39,7 +40,13 @@ main :: proc() {
 		if rl.IsKeyPressed(rl.KeyboardKey.NINE) do game_cycle_theme(&state)
 
 		render_frame_clear(&render_frame)
-		ctx := render_context_new(state.screen_width, state.screen_height, state.theme, state.ui.time, state.ui.dt)
+		ctx := render_context_new(
+			state.screen_width,
+			state.screen_height,
+			state.theme,
+			state.ui.time,
+			state.ui.dt,
+		)
 		build_cozy_background(&render_frame.world, ctx)
 		switch state.view {
 		case .Menu:
@@ -81,3 +88,4 @@ main :: proc() {
 		rl.EndDrawing()
 	}
 }
+

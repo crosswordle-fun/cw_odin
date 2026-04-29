@@ -7,7 +7,7 @@ MenuLayout :: struct {
 	title_y:         i32,
 	title_face_size: i32,
 	title_gap:       i32,
-	title_font_size:  i32,
+	title_font_size: i32,
 	title_height:    i32,
 	button_x:        i32,
 	button_width:    i32,
@@ -28,17 +28,18 @@ menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
 	exit_label: cstring = "EXIT"
 
 	title_face_size := scaled_i32(72, ctx.scale)
-	title_gap := i32(rl.Clamp(f32(title_face_size)/20.0, 1, f32(title_face_size)))
+	title_gap := i32(rl.Clamp(f32(title_face_size) / 20.0, 1, f32(title_face_size)))
 	title_base_height := title_face_size / 10
 	if title_base_height < 1 do title_base_height = 1
 	title_height := title_face_size + title_base_height
-	title_font_size := i32(rl.Clamp(f32(title_face_size)*0.58, 1, f32(title_face_size)))
+	title_font_size := i32(rl.Clamp(f32(title_face_size) * 0.58, 1, f32(title_face_size)))
 	button_font := scaled_i32(28, ctx.scale)
 	button_padding_x := scaled_i32(28, ctx.scale)
 	button_padding_y := scaled_i32(14, ctx.scale)
 	button_gap := scaled_i32(16, ctx.scale)
 
-	title_width := i32(len(title_label)) * title_face_size + (i32(len(title_label)) - 1) * title_gap
+	title_width :=
+		i32(len(title_label)) * title_face_size + (i32(len(title_label)) - 1) * title_gap
 	start_width := measure_text_width(start_label, button_font)
 	exit_width := measure_text_width(exit_label, button_font)
 	button_text_width := start_width
@@ -122,7 +123,14 @@ build_menu_mode_view :: proc(
 	panel_y := layout.start_y - scaled_i32(28, ctx.scale)
 	panel_w := layout.button_width + scaled_i32(84, ctx.scale)
 	panel_h := layout.exit_y + layout.button_height - panel_y + scaled_i32(28, ctx.scale)
-	push_rect(&frame.ui, panel_x, panel_y + scaled_i32(8, ctx.scale), panel_w, panel_h, with_alpha(theme.surface_shadow, 74))
+	push_rect(
+		&frame.ui,
+		panel_x,
+		panel_y + scaled_i32(8, ctx.scale),
+		panel_w,
+		panel_h,
+		with_alpha(theme.surface_shadow, 74),
+	)
 	push_rect(&frame.ui, panel_x, panel_y, panel_w, panel_h, with_alpha(theme.surface, 230))
 	push_rect_lines(&frame.ui, panel_x, panel_y, panel_w, panel_h, 2, rl.BLACK)
 	build_menu_title(&frame.ui, layout, theme, ui)
@@ -167,7 +175,7 @@ menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSta
 	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) {
 		switch selection {
 		case .Start:
-			game_set_view(state, .Cross)
+			game_set_view(state, .Wordle)
 		case .Exit:
 			state.should_quit = true
 		}
@@ -176,5 +184,15 @@ menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSta
 	state.menu_selection = menu_selection_to_state(selection)
 	start_hovered := selection == .Start
 	exit_hovered := selection == .Exit
-	build_menu_mode_view(frame, ctx, layout, start_hovered, exit_hovered, selection, ctx.theme, state.ui)
+	build_menu_mode_view(
+		frame,
+		ctx,
+		layout,
+		start_hovered,
+		exit_hovered,
+		selection,
+		ctx.theme,
+		state.ui,
+	)
 }
+
