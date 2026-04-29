@@ -6,36 +6,6 @@ import rl "vendor:raylib"
 
 VIEW_TRANSITION_DURATION :: f32(0.34)
 
-saturate :: proc(value: f32) -> f32 {
-	if value < 0 do return 0
-	if value > 1 do return 1
-	return value
-}
-
-ease01 :: proc(value: f32) -> f32 {
-	t := saturate(value)
-	return rl.EaseSineInOut(t, 0, 1, 1)
-}
-
-ease_out :: proc(value: f32) -> f32 {
-	t := saturate(value)
-	return rl.EaseCubicOut(t, 0, 1, 1)
-}
-
-with_alpha :: proc(color: rl.Color, alpha: u8) -> rl.Color {
-	return rl.Color{color[0], color[1], color[2], alpha}
-}
-
-lerp_color :: proc(a: rl.Color, b: rl.Color, t: f32) -> rl.Color {
-	v := saturate(t)
-	return rl.Color {
-		u8(f32(a[0]) + (f32(b[0]) - f32(a[0])) * v),
-		u8(f32(a[1]) + (f32(b[1]) - f32(a[1])) * v),
-		u8(f32(a[2]) + (f32(b[2]) - f32(a[2])) * v),
-		u8(f32(a[3]) + (f32(b[3]) - f32(a[3])) * v),
-	}
-}
-
 ui_state_new :: proc(view: GameView, exp: u32) -> UiState {
 	return UiState{previous_view = view, wordle_reveal_guess_row = -1, last_exp = exp}
 }
