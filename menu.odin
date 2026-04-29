@@ -104,17 +104,26 @@ menu_title_rebounce :: proc(tile_age: f32) -> f32 {
 	return 0
 }
 
-menu_title_cycle_color :: proc(gray, yellow, green: rl.Color, age, period: f32) -> rl.Color {
+menu_title_cycle_color :: proc(
+	gray, yellow, green, blue, purple: rl.Color,
+	age, period: f32,
+) -> rl.Color {
 	if period <= 0 do return gray
 
 	position := rl.Wrap(age, 0, period) / period
-	if position < 1.0 / 3.0 {
-		return lerp_color(gray, yellow, ease01(position * 3.0))
+	if position < 1.0 / 5.0 {
+		return lerp_color(gray, yellow, ease01(position * 5.0))
 	}
-	if position < 2.0 / 3.0 {
-		return lerp_color(yellow, green, ease01((position - 1.0 / 3.0) * 3.0))
+	if position < 2.0 / 5.0 {
+		return lerp_color(yellow, green, ease01((position - 1.0 / 5.0) * 5.0))
 	}
-	return lerp_color(green, gray, ease01((position - 2.0 / 3.0) * 3.0))
+	if position < 3.0 / 5.0 {
+		return lerp_color(green, blue, ease01((position - 2.0 / 5.0) * 5.0))
+	}
+	if position < 4.0 / 5.0 {
+		return lerp_color(blue, purple, ease01((position - 3.0 / 5.0) * 5.0))
+	}
+	return lerp_color(purple, gray, ease01((position - 4.0 / 5.0) * 5.0))
 }
 
 build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme, ui: UiState) {
@@ -141,6 +150,8 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme
 			theme.surface,
 			TAILWIND_YELLOW_400,
 			TAILWIND_GREEN_400,
+			TAILWIND_BLUE_400,
+			TAILWIND_PURPLE_400,
 			color_age,
 			rebounce_period,
 		)
@@ -148,6 +159,8 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme
 			theme.surface_shadow,
 			TAILWIND_YELLOW_600,
 			TAILWIND_GREEN_600,
+			TAILWIND_BLUE_600,
+			TAILWIND_PURPLE_600,
 			color_age,
 			rebounce_period,
 		)
