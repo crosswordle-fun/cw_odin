@@ -23,20 +23,22 @@ MenuSelection :: enum {
 }
 
 menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
-	title_label := "CROSSWORDLE"
-	start_label: cstring = "START"
-	exit_label: cstring = "EXIT"
+	title_label := game_data.menu.title
+	start_label := game_data.menu.start_label
+	exit_label := game_data.menu.exit_label
 
-	title_face_size := scaled_i32(72, ctx.scale)
+	title_face_size := scaled_i32(game_data.menu.title_face_size, ctx.scale)
 	title_gap := i32(rl.Clamp(f32(title_face_size) / 20.0, 1, f32(title_face_size)))
 	title_base_height := title_face_size / 10
 	if title_base_height < 1 do title_base_height = 1
 	title_height := title_face_size + title_base_height
-	title_font_size := i32(rl.Clamp(f32(title_face_size) * 0.58, 1, f32(title_face_size)))
-	button_font := scaled_i32(28, ctx.scale)
-	button_padding_x := scaled_i32(28, ctx.scale)
-	button_padding_y := scaled_i32(14, ctx.scale)
-	button_gap := scaled_i32(16, ctx.scale)
+	title_font_size := i32(
+		rl.Clamp(f32(title_face_size) * game_data.menu.title_font_ratio, 1, f32(title_face_size)),
+	)
+	button_font := scaled_i32(game_data.menu.button_font, ctx.scale)
+	button_padding_x := scaled_i32(game_data.menu.button_padding_x, ctx.scale)
+	button_padding_y := scaled_i32(game_data.menu.button_padding_y, ctx.scale)
+	button_gap := scaled_i32(game_data.menu.button_gap, ctx.scale)
 
 	title_width :=
 		i32(len(title_label)) * title_face_size + (i32(len(title_label)) - 1) * title_gap
@@ -50,7 +52,7 @@ menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
 	title_x := (ctx.screen_width - title_width) / 2
 	title_y := (ctx.screen_height - title_height) / 2
 	button_x := (ctx.screen_width - button_width) / 2
-	start_y := title_y + title_height + scaled_i32(32, ctx.scale)
+	start_y := title_y + title_height + scaled_i32(game_data.menu.title_button_gap, ctx.scale)
 	exit_y := start_y + button_height + button_gap
 
 	return MenuLayout {
@@ -80,16 +82,26 @@ menu_selection_to_state :: proc(selection: MenuSelection) -> i32 {
 }
 
 menu_title_drop_bounce :: proc(tile_age: f32) -> f32 {
-	if tile_age >= 0.5 do return 0
-	bounce := (1 - saturate(tile_age / 0.5)) * -28
-	if tile_age > 0 do bounce = -28 + rl.EaseBounceOut(tile_age, 0, 28, 0.5)
+	if tile_age >= game_data.menu.drop_duration do return 0
+	bounce :=
+		(1 - saturate(tile_age / game_data.menu.drop_duration)) * -game_data.menu.drop_distance
+	if tile_age > 0 {
+		bounce =
+			-game_data.menu.drop_distance +
+			rl.EaseBounceOut(
+				tile_age,
+				0,
+				game_data.menu.drop_distance,
+				game_data.menu.drop_duration,
+			)
+	}
 	return bounce
 }
 
 menu_title_rebounce :: proc(tile_age: f32) -> f32 {
-	raise_duration := f32(0.38)
-	fall_duration := f32(0.52)
-	lift := f32(-22)
+	raise_duration := game_data.menu.rebounce_raise_time
+	fall_duration := game_data.menu.rebounce_fall_time
+	lift := -game_data.menu.rebounce_lift
 
 	if tile_age < 0 do return 0
 	if tile_age < raise_duration {
@@ -127,11 +139,11 @@ menu_title_cycle_color :: proc(
 }
 
 build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme, ui: UiState) {
-	title_label := "CROSSWORDLE"
+	title_label := game_data.menu.title
 	elapsed := ui.time - ui.view_enter_time
-	title_stagger := f32(0.045)
-	bounce_duration := f32(0.5)
-	rebounce_period := f32(3.0)
+	title_stagger := game_data.menu.stagger
+	bounce_duration := game_data.menu.drop_duration
+	rebounce_period := game_data.menu.rebounce_period
 	initial_drop_duration := bounce_duration + f32(len(title_label) - 1) * title_stagger
 
 	x := layout.title_x
@@ -195,7 +207,7 @@ build_menu_mode_view :: proc(
 	build_menu_title(&frame.ui, layout, theme, ui)
 	build_button(
 		&frame.ui,
-		"START",
+		game_data.menu.start_label,
 		layout.button_x,
 		layout.start_y,
 		layout.button_width,
@@ -206,7 +218,7 @@ build_menu_mode_view :: proc(
 	)
 	build_button(
 		&frame.ui,
-		"EXIT",
+		game_data.menu.exit_label,
 		layout.button_x,
 		layout.exit_y,
 		layout.button_width,

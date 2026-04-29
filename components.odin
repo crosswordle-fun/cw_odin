@@ -350,21 +350,21 @@ build_title :: proc(
 		label,
 		ctx.screen_width,
 		y,
-		scaled_i32(BASE_TITLE_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.title, ctx.scale),
 		color,
 	)
 }
 
 build_mode_tabs :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameView) {
-	font_size := scaled_i32(30, ctx.scale)
-	title_gap := scaled_i32(BASE_TITLE_GAP, ctx.scale)
-	padding_x := scaled_i32(BASE_TITLE_PADDING_X, ctx.scale)
-	padding_y := scaled_i32(BASE_TITLE_PADDING_Y, ctx.scale)
-	y := scaled_i32(BASE_TITLE_Y, ctx.scale)
+	font_size := scaled_i32(game_data.tabs.font_size, ctx.scale)
+	title_gap := scaled_i32(game_data.title.gap, ctx.scale)
+	padding_x := scaled_i32(game_data.title.padding_x, ctx.scale)
+	padding_y := scaled_i32(game_data.title.padding_y, ctx.scale)
+	y := scaled_i32(game_data.title.y, ctx.scale)
 
-	wordle_label: cstring = "WORDLE"
-	cross_label: cstring = "CROSS"
-	crafting_label: cstring = "CRAFTING"
+	wordle_label := game_data.tabs.wordle
+	cross_label := game_data.tabs.cross
+	crafting_label := game_data.tabs.crafting
 	wordle_text_width := measure_text_width(wordle_label, font_size)
 	cross_text_width := measure_text_width(cross_label, font_size)
 	crafting_text_width := measure_text_width(crafting_label, font_size)
@@ -423,27 +423,31 @@ build_gameplay_fixed_ui :: proc(buffer: ^RenderBuffer, ctx: RenderContext, state
 }
 
 build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: UiState) {
-	font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
-	x := scaled_i32(24, ctx.scale)
-	y := scaled_i32(24, ctx.scale)
+	font_size := scaled_i32(game_data.fonts.hud, ctx.scale)
+	x := scaled_i32(game_data.hud.exp_x, ctx.scale)
+	y := scaled_i32(game_data.hud.exp_y, ctx.scale)
 	pulse := f32(0)
-	if ui.exp_gain_age < 0.42 do pulse = math.sin(ui.exp_gain_age * 22) * (1 - ui.exp_gain_age / 0.42)
-	badge_w := scaled_i32(132, ctx.scale) + i32(pulse * 5)
-	badge_h := scaled_i32(38, ctx.scale) + i32(pulse * 3)
+	if ui.exp_gain_age < game_data.effects.exp_pulse_duration {
+		pulse =
+			math.sin(ui.exp_gain_age * game_data.effects.exp_pulse_frequency) *
+			(1 - ui.exp_gain_age / game_data.effects.exp_pulse_duration)
+	}
+	badge_w := scaled_i32(game_data.hud.exp_badge_width, ctx.scale) + i32(pulse * 5)
+	badge_h := scaled_i32(game_data.hud.exp_badge_height, ctx.scale) + i32(pulse * 3)
 	push_rect(buffer, x, y, badge_w, badge_h, with_alpha(ctx.theme.surface, 236))
 	push_rect_lines(buffer, x, y, badge_w, badge_h, 2, ctx.theme.outline)
 	push_circle(
 		buffer,
-		f32(x + scaled_i32(20, ctx.scale)),
+		f32(x + scaled_i32(game_data.hud.exp_icon_x, ctx.scale)),
 		f32(y + badge_h / 2),
 		f32(scaled_i32(9, ctx.scale)),
 		with_alpha(ctx.theme.exp, 220),
 	)
-	label := fmt.caprintf("EXP %d", exp)
+	label := fmt.caprintf("%s %d", game_data.hud.exp_label_prefix, exp)
 	build_text(
 		buffer,
 		label,
-		x + scaled_i32(36, ctx.scale),
+		x + scaled_i32(game_data.hud.exp_text_x, ctx.scale),
 		y + (badge_h - font_size) / 2,
 		font_size,
 		ctx.theme.exp,
@@ -451,9 +455,9 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: U
 }
 
 build_wordle_level :: proc(buffer: ^RenderBuffer, ctx: RenderContext, level: u32) {
-	font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
-	y := scaled_i32(BASE_WORDLE_LEVEL_Y, ctx.scale)
-	label := fmt.caprintf("LEVEL %d", level + 1)
+	font_size := scaled_i32(game_data.fonts.hud, ctx.scale)
+	y := scaled_i32(game_data.wordle.level_y, ctx.scale)
+	label := fmt.caprintf("%s %d", game_data.wordle.level_label_prefix, level + 1)
 	build_centered_text(buffer, label, ctx.screen_width, y, font_size, ctx.theme.text)
 }
 
@@ -524,17 +528,21 @@ build_inventory_counts :: proc(
 	counts: [LETTER_COUNT]u32,
 	color: rl.Color,
 ) {
-	tile_size := scaled_i32(38, ctx.scale)
-	tile_gap := scaled_i32(7, ctx.scale)
+	tile_size := scaled_i32(game_data.hud.inventory_tile, ctx.scale)
+	tile_gap := scaled_i32(game_data.hud.inventory_gap, ctx.scale)
 	base_height := grid_tile_base_height(tile_size)
 	row_height := tile_size + base_height + tile_gap
-	column_count := i32(2)
-	column_rows := i32(13)
+	column_count := game_data.hud.inventory_columns
+	column_rows := game_data.hud.inventory_rows
 	hud_width := tile_size * column_count + tile_gap * (column_count - 1)
 	hud_height := row_height * column_rows - tile_gap
-	panel_pad_x := scaled_i32(10, ctx.scale)
-	panel_pad_y := scaled_i32(6, ctx.scale)
-	start_x := ctx.screen_width - hud_width - panel_pad_x - scaled_i32(46, ctx.scale)
+	panel_pad_x := scaled_i32(game_data.hud.inventory_pad_x, ctx.scale)
+	panel_pad_y := scaled_i32(game_data.hud.inventory_pad_y, ctx.scale)
+	start_x :=
+		ctx.screen_width -
+		hud_width -
+		panel_pad_x -
+		scaled_i32(game_data.hud.inventory_right, ctx.scale)
 	start_y := (ctx.screen_height - hud_height) / 2
 	push_rect(
 		buffer,
@@ -562,7 +570,7 @@ build_inventory_counts :: proc(
 		ctx.theme.outline,
 	)
 
-	for i in 0 ..< LETTER_COUNT {
+	for i in 0 ..< len(game_data.grid.alphabet) {
 		index := i32(i)
 		row := index % column_rows
 		col := index / column_rows
@@ -573,7 +581,7 @@ build_inventory_counts :: proc(
 			x,
 			y,
 			tile_size,
-			FRAG_LETTERS[i],
+			game_data.grid.alphabet[i],
 			counts[i],
 			color,
 			ctx.theme,
@@ -604,8 +612,8 @@ build_crossword_grid :: proc(
 	theme: Theme,
 	ui: UiState,
 ) {
-	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
-	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, scale)
+	scale := f32(grid.cell_size) / f32(game_data.grid.cell_size)
+	font_size := scaled_i32(game_data.fonts.board, scale)
 
 	for i in 0 ..< len(grid.tiles) {
 		tile := grid.tiles[i]
@@ -667,8 +675,8 @@ build_crossword_selector_overlay :: proc(
 	if !show_frags do selector_color = theme.highlight_rune
 	if !show_frags do selector_shadow = theme.highlight_rune_shadow
 
-	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
-	font_size := scaled_i32(BASE_SELECTOR_FONT_SIZE, scale)
+	scale := f32(grid.cell_size) / f32(game_data.grid.cell_size)
+	font_size := scaled_i32(game_data.fonts.selector, scale)
 	selector_alpha: u8 = 100
 
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
@@ -736,7 +744,7 @@ build_wordle_guess_row :: proc(
 	ui: UiState,
 	row_index: i32,
 ) {
-	for col in 0 ..< WORDLE_WORD_LEN {
+	for col in 0 ..< game_data.wordle.word_length {
 		tile_x := x + i32(col) * (cell_size + gap)
 		color := wordle_feedback_color(guess.feedback[col], theme)
 		face_lift := i32(0)
@@ -772,7 +780,7 @@ build_wordle_current_row :: proc(
 	ui: UiState,
 ) {
 	shake := i32(ui_invalid_shake_x(ui, f32(cell_size) * 0.10))
-	for col in 0 ..< WORDLE_WORD_LEN {
+	for col in 0 ..< game_data.wordle.word_length {
 		tile_x := x + i32(col) * (cell_size + gap) + shake
 		if current_guess[col] != 0 {
 			lift := tile_click_lift(ctx.time, grid_tile_base_height(cell_size))
@@ -809,13 +817,14 @@ build_wordle_play_board :: proc(
 	wordle: WordleState,
 	ui: UiState,
 ) {
-	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
-	gap := scaled_i32(BASE_GAP, ctx.scale)
-	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
-	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, ctx.scale)
+	cell_size := scaled_i32(game_data.grid.cell_size, ctx.scale)
+	gap := scaled_i32(game_data.grid.gap, ctx.scale)
+	font_size := scaled_i32(game_data.fonts.board, ctx.scale)
+	start_y := scaled_i32(game_data.wordle.board_y, ctx.scale)
 	row_step := tile_row_step(cell_size, gap)
 	visible_rows := wordle_visible_row_count(ctx.screen_height, start_y, row_step)
-	board_width := WORDLE_WORD_LEN * cell_size + (WORDLE_WORD_LEN - 1) * gap
+	board_width :=
+		game_data.wordle.word_length * cell_size + (game_data.wordle.word_length - 1) * gap
 	start_x := (ctx.screen_width - board_width) / 2
 
 	total_rows := i32(len(wordle.guesses)) + 1
@@ -867,13 +876,14 @@ build_wordle_history_board :: proc(
 	wordle: WordleState,
 	ui: UiState,
 ) {
-	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
-	gap := scaled_i32(BASE_GAP, ctx.scale)
-	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
-	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, ctx.scale)
+	cell_size := scaled_i32(game_data.grid.cell_size, ctx.scale)
+	gap := scaled_i32(game_data.grid.gap, ctx.scale)
+	font_size := scaled_i32(game_data.fonts.board, ctx.scale)
+	start_y := scaled_i32(game_data.wordle.board_y, ctx.scale)
 	row_step := tile_row_step(cell_size, gap)
 	visible_rows := wordle_visible_row_count(ctx.screen_height, start_y, row_step)
-	board_width := WORDLE_WORD_LEN * cell_size + (WORDLE_WORD_LEN - 1) * gap
+	board_width :=
+		game_data.wordle.word_length * cell_size + (game_data.wordle.word_length - 1) * gap
 	start_x := (ctx.screen_width - board_width) / 2
 
 	if wordle.history_index < 0 || wordle.history_index >= i32(len(wordle.history)) do return
@@ -910,7 +920,7 @@ build_wordle_history_board :: proc(
 	reward_gap := scaled_i32(14, ctx.scale)
 	reward_y := ctx.screen_height - history_reward_size - margin
 	exp_label := fmt.caprintf("+%d EXP", record.reward_exp)
-	exp_font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
+	exp_font_size := scaled_i32(game_data.fonts.hud, ctx.scale)
 	exp_width := measure_text_width(exp_label, exp_font_size)
 	reward_x := margin
 	exp_x := reward_x
@@ -935,10 +945,11 @@ build_wordle_won_panel :: proc(
 	wordle: WordleState,
 	ui: UiState,
 ) {
-	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
-	gap := scaled_i32(BASE_GAP, ctx.scale)
-	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
-	board_width := WORDLE_WORD_LEN * cell_size + (WORDLE_WORD_LEN - 1) * gap
+	cell_size := scaled_i32(game_data.grid.cell_size, ctx.scale)
+	gap := scaled_i32(game_data.grid.gap, ctx.scale)
+	font_size := scaled_i32(game_data.fonts.board, ctx.scale)
+	board_width :=
+		game_data.wordle.word_length * cell_size + (game_data.wordle.word_length - 1) * gap
 	start_x := (ctx.screen_width - board_width) / 2
 
 	title_y := scaled_i32(165, ctx.scale)
@@ -950,22 +961,22 @@ build_wordle_won_panel :: proc(
 
 	build_centered_text(
 		buffer,
-		"CONGRATULATIONS!",
+		game_data.wordle.win_title,
 		ctx.screen_width,
 		title_y,
-		scaled_i32(BASE_TITLE_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.title, ctx.scale),
 		ctx.theme.text,
 	)
 	build_centered_text(
 		buffer,
-		"PUZZLE SOLVED. YOUR REWARD IS READY.",
+		game_data.wordle.win_subtitle,
 		ctx.screen_width,
 		subtitle_y,
-		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.hud, ctx.scale),
 		ctx.theme.text_muted,
 	)
 
-	for col in 0 ..< WORDLE_WORD_LEN {
+	for col in 0 ..< game_data.wordle.word_length {
 		tile_x := start_x + i32(col) * (cell_size + gap)
 		build_tile(
 			buffer,
@@ -981,10 +992,10 @@ build_wordle_won_panel :: proc(
 
 	build_centered_text(
 		buffer,
-		"REWARDS",
+		game_data.wordle.rewards_label,
 		ctx.screen_width,
 		reward_label_y,
-		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.hud, ctx.scale),
 		ctx.theme.highlight_fragment,
 	)
 	reward_scale := f32(1)
@@ -1006,7 +1017,7 @@ build_wordle_won_panel :: proc(
 		reward_detail,
 		ctx.screen_width,
 		reward_detail_y,
-		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.hud, ctx.scale),
 		ctx.theme.exp,
 	)
 }
@@ -1030,8 +1041,8 @@ build_wordle_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^
 }
 
 crafting_status_label :: proc(crafting: CraftingState) -> cstring {
-	status_label: cstring = "INCOMPLETE RECIPE"
-	if crafting.count == 4 {
+	status_label := game_data.crafting.incomplete_label
+	if crafting.count == game_data.crafting.matching_required {
 		same := true
 		letter := crafting.selected[0]
 		for i in 1 ..< crafting.count {
@@ -1040,9 +1051,9 @@ crafting_status_label :: proc(crafting: CraftingState) -> cstring {
 				break
 			}
 		}
-		if same do status_label = "MATCHING RUNE"
+		if same do status_label = game_data.crafting.matching_label
 	}
-	if crafting.count == 5 {
+	if crafting.count == game_data.crafting.random_required {
 		different := true
 		for i in 0 ..< crafting.count {
 			for j in i + 1 ..< crafting.count {
@@ -1053,7 +1064,7 @@ crafting_status_label :: proc(crafting: CraftingState) -> cstring {
 			}
 			if !different do break
 		}
-		if different do status_label = "RANDOM RUNE"
+		if different do status_label = game_data.crafting.random_label
 	}
 	return status_label
 }
@@ -1061,26 +1072,28 @@ crafting_status_label :: proc(crafting: CraftingState) -> cstring {
 build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	build_centered_text(
 		&frame.ui,
-		"FRAGMENTS",
+		game_data.crafting.fragment_label,
 		ctx.screen_width,
 		scaled_i32(170, ctx.scale),
-		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.hud, ctx.scale),
 		ctx.theme.highlight_fragment,
 	)
 
-	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
-	gap := scaled_i32(BASE_GAP, ctx.scale)
-	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
-	board_width := 5 * cell_size + 4 * gap
+	cell_size := scaled_i32(game_data.grid.cell_size, ctx.scale)
+	gap := scaled_i32(game_data.grid.gap, ctx.scale)
+	font_size := scaled_i32(game_data.fonts.board, ctx.scale)
+	board_width :=
+		game_data.crafting.selection_capacity * cell_size +
+		(game_data.crafting.selection_capacity - 1) * gap
 	start_x := (ctx.screen_width - board_width) / 2
-	selected_y := scaled_i32(204, ctx.scale)
+	selected_y := scaled_i32(game_data.crafting.board_y, ctx.scale)
 	selection_shake := i32(ui_invalid_shake_x(state.ui, f32(cell_size) * 0.10))
 	status_y := selected_y + cell_size + scaled_i32(22, ctx.scale)
 	output_label_y := status_y + scaled_i32(50, ctx.scale)
 	output_y := output_label_y + scaled_i32(34, ctx.scale)
 	output_exp_y := output_y + cell_size + scaled_i32(14, ctx.scale)
 
-	for i in 0 ..< len(state.crafting.selected) {
+	for i in 0 ..< game_data.crafting.selection_capacity {
 		tile_x := start_x + i32(i) * (cell_size + gap) + selection_shake
 		letter := state.crafting.selected[i]
 		color := ctx.theme.highlight_fragment
@@ -1118,16 +1131,16 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		crafting_status_label(state.crafting),
 		ctx.screen_width,
 		status_y,
-		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.hud, ctx.scale),
 		ctx.theme.text_muted,
 	)
 
 	build_centered_text(
 		&frame.ui,
-		"LATEST RUNE",
+		game_data.crafting.latest_rune_label,
 		ctx.screen_width,
 		output_label_y,
-		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		scaled_i32(game_data.fonts.hud, ctx.scale),
 		ctx.theme.highlight_rune,
 	)
 	rune_scale := f32(1)
@@ -1161,13 +1174,13 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		)
 	}
 	if state.crafting.crafted_rune != 0 {
-		reward_detail := fmt.caprintf("+%d EXP", RUNE_CRAFT_EXP_REWARD)
+		reward_detail := fmt.caprintf("+%d EXP", game_data.crafting.exp_reward)
 		build_centered_text(
 			&frame.ui,
 			reward_detail,
 			ctx.screen_width,
 			output_exp_y,
-			scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+			scaled_i32(game_data.fonts.hud, ctx.scale),
 			ctx.theme.exp,
 		)
 	}
@@ -1196,17 +1209,18 @@ build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^G
 
 	if state.cross_reward_exp != 0 {
 		grid_bottom := state.grid.offset_y + grid_pixel_height(state.grid)
-		hud_start_y := state.screen_height - (scaled_i32(BASE_HUD_ROW_HEIGHT, ctx.scale) * 2) - 20
+		hud_start_y :=
+			state.screen_height - (scaled_i32(game_data.hud.row_height, ctx.scale) * 2) - 20
 		reward_y :=
 			grid_bottom +
-			(hud_start_y - grid_bottom - scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)) / 2
+			(hud_start_y - grid_bottom - scaled_i32(game_data.fonts.hud, ctx.scale)) / 2
 		label := fmt.caprintf("+%d EXP", state.cross_reward_exp)
 		build_centered_text(
 			&frame.ui,
 			label,
 			state.screen_width,
 			reward_y,
-			scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+			scaled_i32(game_data.fonts.hud, ctx.scale),
 			ctx.theme.exp,
 		)
 	}

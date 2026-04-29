@@ -3,9 +3,9 @@ package main
 import rl "vendor:raylib"
 
 wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
-	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
-	gap := scaled_i32(BASE_GAP, ctx.scale)
-	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, ctx.scale)
+	cell_size := scaled_i32(game_data.grid.cell_size, ctx.scale)
+	gap := scaled_i32(game_data.grid.gap, ctx.scale)
+	start_y := scaled_i32(game_data.wordle.board_y, ctx.scale)
 	row_step := tile_row_step(cell_size, gap)
 	visible_rows := wordle_visible_row_count(ctx.screen_height, start_y, row_step)
 
@@ -105,7 +105,7 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 			}
 
 			if rl.IsKeyPressed(rl.KeyboardKey.ENTER) &&
-			   state.wordle.current_count >= WORDLE_WORD_LEN {
+			   state.wordle.current_count >= game_data.wordle.word_length {
 				solution := wordle_current_solution(state.wordle)
 				guess := wordle_evaluate_guess(state.wordle.current_guess, solution)
 				append(&state.wordle.guesses, guess)
@@ -113,7 +113,7 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 				wordle_clear_current_guess(&state.wordle)
 
 				solved := true
-				for i in 0 ..< WORDLE_WORD_LEN {
+				for i in 0 ..< game_data.wordle.word_length {
 					if guess.feedback[i] != .Correct {
 						solved = false
 						break
@@ -121,28 +121,28 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 				}
 				if solved {
 					state.wordle.win_solution = solution
-					reward_index := rl.GetRandomValue(0, WORDLE_WORD_LEN - 1)
+					reward_index := rl.GetRandomValue(0, game_data.wordle.word_length - 1)
 					reward_letter := solution[reward_index]
 					state.wordle.reward_fragment = reward_letter
 					frag_index := i32(reward_letter - 'A')
 					if frag_index >= 0 && frag_index < LETTER_COUNT {
 						state.frag_counts[frag_index] += 1
 					}
-					state.wordle.reward_exp = WORDLE_LEVEL_EXP_REWARD
+					state.wordle.reward_exp = game_data.wordle.level_exp_reward
 					state.exp += state.wordle.reward_exp
 					ui_note_exp_reward(
 						&state.ui,
 						state.wordle.reward_exp,
 						f32(state.screen_width / 2),
-						f32(scaled_i32(360, ctx.scale)),
+						f32(scaled_i32(game_data.wordle.reward_exp_y, ctx.scale)),
 						state.theme.exp,
 					)
 					ui_spawn_burst(
 						&state.ui,
 						f32(state.screen_width / 2),
-						f32(scaled_i32(360, ctx.scale)),
+						f32(scaled_i32(game_data.wordle.reward_exp_y, ctx.scale)),
 						state.theme.wordle_correct,
-						24,
+						game_data.wordle.reward_burst_count,
 					)
 					state.wordle.substate = .Won
 				}

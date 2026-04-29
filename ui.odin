@@ -4,8 +4,6 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
-VIEW_TRANSITION_DURATION :: f32(0.34)
-
 saturate :: proc(value: f32) -> f32 {
 	if value < 0 do return 0
 	if value > 1 do return 1
@@ -83,7 +81,7 @@ ui_update :: proc(state: ^GameState, dt: f32) {
 	for i in 0 ..< len(state.ui.tile_pops) {
 		if !state.ui.tile_pops[i].active do continue
 		state.ui.tile_pops[i].age += frame_dt
-		if state.ui.tile_pops[i].age >= 0.5 {
+		if state.ui.tile_pops[i].age >= game_data.effects.tile_pop_duration {
 			state.ui.tile_pops[i].active = false
 		}
 	}
@@ -111,7 +109,7 @@ gameplay_view_index :: proc(view: GameView) -> i32 {
 }
 
 ui_view_transition_active :: proc(ui: UiState) -> bool {
-	return ui.time - ui.view_enter_time < VIEW_TRANSITION_DURATION
+	return ui.time - ui.view_enter_time < game_data.effects.view_transition_duration
 }
 
 ui_view_transition_offsets :: proc(
@@ -124,11 +122,11 @@ ui_view_transition_offsets :: proc(
 	current_offset: rl.Vector2,
 ) {
 	age := ui.time - ui.view_enter_time
-	if age >= VIEW_TRANSITION_DURATION || ui.previous_view == current_view {
+	if age >= game_data.effects.view_transition_duration || ui.previous_view == current_view {
 		return rl.Vector2{0, 0}, rl.Vector2{0, 0}
 	}
 
-	t := rl.EaseCubicOut(saturate(age / VIEW_TRANSITION_DURATION), 0, 1, 1)
+	t := rl.EaseCubicOut(saturate(age / game_data.effects.view_transition_duration), 0, 1, 1)
 	previous_start := rl.Vector2{0, 0}
 	previous_end := rl.Vector2{0, 0}
 	current_start := rl.Vector2{0, 0}
@@ -176,7 +174,7 @@ ui_spawn_floating_exp :: proc(ui: ^UiState, amount: u32, x: f32, y: f32, color: 
 			amount   = amount,
 			x        = x,
 			y        = y,
-			lifetime = 1.2,
+			lifetime = game_data.effects.floating_text_lifetime,
 			color    = color,
 		}
 		return
@@ -217,7 +215,7 @@ ui_spawn_burst :: proc(ui: ^UiState, x: f32, y: f32, color: rl.Color, count: i32
 ui_note_exp_reward :: proc(ui: ^UiState, amount: u32, x: f32, y: f32, color: rl.Color) {
 	ui.exp_gain_age = 0
 	ui_spawn_floating_exp(ui, amount, x, y, color)
-	ui_spawn_burst(ui, x, y, color, 18)
+	ui_spawn_burst(ui, x, y, color, game_data.effects.exp_burst_count)
 }
 
 ui_note_tile_pop :: proc(ui: ^UiState, key: i32) {
@@ -251,9 +249,13 @@ ui_tile_pop_scale :: proc(ui: UiState, key: i32) -> f32 {
 }
 
 ui_invalid_shake_x :: proc(ui: UiState, strength: f32) -> f32 {
-	if ui.invalid_age >= 0.34 do return 0
-	t := ui.invalid_age / 0.34
-	return math.sin(ui.invalid_age * 92) * (1 - t) * strength
+	if ui.invalid_age >= game_data.effects.invalid_shake_duration do return 0
+	t := ui.invalid_age / game_data.effects.invalid_shake_duration
+	return(
+		math.sin(ui.invalid_age * game_data.effects.invalid_shake_frequency) *
+		(1 - t) *
+		strength \
+	)
 }
 
 ui_view_transition_offset_y :: proc(ui: UiState, scale: f32) -> i32 {
@@ -283,10 +285,10 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 		text := ui.floating_text[i]
 		if !text.active do continue
 		t := saturate(text.age / text.lifetime)
-		y := text.y - ease_out(t) * 44
+		y := text.y - ease_out(t) * game_data.effects.floating_text_rise
 		alpha := u8(255 * (1 - t))
 		label := fmt.caprintf("+%d EXP", text.amount)
-		font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
+		font_size := scaled_i32(game_data.fonts.hud, ctx.scale)
 		push_text(
 			buffer,
 			label,
@@ -300,7 +302,7 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 
 draw_view_transition :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) {
 	age := ui.time - ui.view_enter_time
-	if age >= VIEW_TRANSITION_DURATION do return
+	if age >= game_data.effects.view_transition_duration do return
 	alpha := u8(120 * (1 - ease_out(age / 0.28)))
 	push_rect(
 		buffer,

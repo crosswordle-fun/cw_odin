@@ -7,6 +7,11 @@ read_pressed_letter :: proc() -> (letter: rune, ok: bool) {
 		ch := rl.GetCharPressed()
 		if ch == 0 do return 0, false
 		if ch >= 'a' && ch <= 'z' do ch -= 'a' - 'A'
-		if ch >= 'A' && ch <= 'Z' do return rune(ch), true
+		if ch >= 'A' && ch <= 'Z' {
+			letter := rune(ch)
+			for allowed in game_data.grid.alphabet {
+				if allowed == letter do return letter, true
+			}
+		}
 	}
 }

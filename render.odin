@@ -3,9 +3,6 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
-RENDER_BUFFER_CAPACITY :: 2048
-// GAME_FONT_PATH :: "assets/jetbrains.ttf"
-GAME_FONT_PATH :: "assets/tiny5.ttf"
 TEXT_SPACING :: f32(1)
 
 game_font: rl.Font
@@ -59,7 +56,9 @@ RenderContext :: struct {
 }
 
 render_buffer_new :: proc() -> RenderBuffer {
-	return RenderBuffer{commands = make([dynamic]RenderCommand, 0, RENDER_BUFFER_CAPACITY)}
+	return RenderBuffer {
+		commands = make([dynamic]RenderCommand, 0, game_data.screen.render_buffer_capacity),
+	}
 }
 
 render_frame_new :: proc() -> RenderFrame {
@@ -100,7 +99,7 @@ render_context_new :: proc(
 }
 
 game_font_load :: proc() {
-	game_font = rl.LoadFont(GAME_FONT_PATH)
+	game_font = rl.LoadFont(game_data.screen.font_path)
 }
 
 game_font_unload :: proc() {

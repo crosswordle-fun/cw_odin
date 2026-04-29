@@ -2,35 +2,149 @@ package main
 
 import rl "vendor:raylib"
 
-VIRTUAL_SCREEN_WIDTH :: 1280
-VIRTUAL_SCREEN_HEIGHT :: 720
-BASE_CELL_SIZE :: 64
-BASE_GAP :: 4
-BASE_HUD_ITEM_WIDTH :: 56
-BASE_HUD_ROW_HEIGHT :: 30
-BASE_HUD_FONT_SIZE :: 20
-BASE_BOARD_FONT_SIZE :: 28
-BASE_SELECTOR_FONT_SIZE :: 24
-BASE_TITLE_FONT_SIZE :: 48
-BASE_TITLE_GAP :: 16
-BASE_TITLE_PADDING_X :: 10
-BASE_TITLE_PADDING_Y :: 6
-BASE_TITLE_Y :: 30
-BASE_SELECTOR_OUTLINE :: 3
-BASE_SELECTOR_LABEL_OFFSET :: 6
-BASE_RUNE_PADDING :: 6
-BASE_HUD_VALUE_OFFSET :: 18
-GRID_COLS :: 7
-GRID_ROWS :: 7
 LETTER_COUNT :: 26
 WORDLE_WORD_LEN :: 5
-WORDLE_SOLUTION_COUNT :: 10
-WORDLE_LEVEL_EXP_REWARD :: 100
-FRAG_TILE_EXP_REWARD :: 500
-RUNE_TILE_EXP_REWARD :: 1000
-RUNE_CRAFT_EXP_REWARD :: 250
-BASE_WORDLE_BOARD_Y :: 125
-BASE_WORDLE_LEVEL_Y :: 92
+CRAFTING_SELECTION_CAPACITY :: 5
+DEFAULT_GAME_DATA_PATH :: "game_data.json5"
+
+GameScreenData :: struct {
+	virtual_width:          i32,
+	virtual_height:         i32,
+	target_fps:             i32,
+	window_title:           cstring,
+	font_path:              cstring,
+	render_buffer_capacity: int,
+}
+
+GameGridData :: struct {
+	cols:          i32,
+	rows:          i32,
+	cell_size:     i32,
+	gap:           i32,
+	frag_tile_exp: u32,
+	rune_tile_exp: u32,
+	selector_row:  i32,
+	selector_col:  i32,
+	selector_down: bool,
+	alphabet:      []rune,
+}
+
+GameFontData :: struct {
+	hud:      i32,
+	board:    i32,
+	selector: i32,
+	title:    i32,
+}
+
+GameHudData :: struct {
+	item_width:        i32,
+	row_height:        i32,
+	exp_x:             i32,
+	exp_y:             i32,
+	exp_badge_width:   i32,
+	exp_badge_height:  i32,
+	exp_icon_x:        i32,
+	exp_text_x:        i32,
+	exp_label_prefix:  cstring,
+	inventory_tile:    i32,
+	inventory_gap:     i32,
+	inventory_columns: i32,
+	inventory_rows:    i32,
+	inventory_pad_x:   i32,
+	inventory_pad_y:   i32,
+	inventory_right:   i32,
+}
+
+GameTitleData :: struct {
+	gap:       i32,
+	padding_x: i32,
+	padding_y: i32,
+	y:         i32,
+}
+
+GameTabsData :: struct {
+	font_size: i32,
+	cross:     cstring,
+	wordle:    cstring,
+	crafting:  cstring,
+}
+
+GameMenuData :: struct {
+	title:               string,
+	start_label:         cstring,
+	exit_label:          cstring,
+	title_face_size:     i32,
+	title_font_ratio:    f32,
+	button_font:         i32,
+	button_padding_x:    i32,
+	button_padding_y:    i32,
+	button_gap:          i32,
+	title_button_gap:    i32,
+	drop_duration:       f32,
+	drop_distance:       f32,
+	rebounce_raise_time: f32,
+	rebounce_fall_time:  f32,
+	rebounce_lift:       f32,
+	rebounce_period:     f32,
+	stagger:             f32,
+}
+
+GameWordleData :: struct {
+	word_length:        i32,
+	solutions:          []string,
+	level_exp_reward:   u32,
+	board_y:            i32,
+	level_y:            i32,
+	reward_exp_y:       i32,
+	reward_burst_count: i32,
+	win_title:          cstring,
+	win_subtitle:       cstring,
+	rewards_label:      cstring,
+	level_label_prefix: cstring,
+}
+
+GameCraftingData :: struct {
+	selection_capacity: i32,
+	matching_required:  i32,
+	random_required:    i32,
+	exp_reward:         u32,
+	fragment_label:     cstring,
+	incomplete_label:   cstring,
+	matching_label:     cstring,
+	random_label:       cstring,
+	latest_rune_label:  cstring,
+	board_y:            i32,
+	reward_exp_y:       i32,
+	reward_burst_count: i32,
+}
+
+GameEffectsData :: struct {
+	view_transition_duration: f32,
+	exp_pulse_duration:       f32,
+	exp_pulse_frequency:      f32,
+	invalid_shake_duration:   f32,
+	invalid_shake_frequency:  f32,
+	floating_text_lifetime:   f32,
+	floating_text_rise:       f32,
+	exp_burst_count:          i32,
+	tile_pop_duration:        f32,
+}
+
+GameData :: struct {
+	screen:   GameScreenData,
+	grid:     GameGridData,
+	fonts:    GameFontData,
+	hud:      GameHudData,
+	title:    GameTitleData,
+	tabs:     GameTabsData,
+	menu:     GameMenuData,
+	wordle:   GameWordleData,
+	crafting: GameCraftingData,
+	effects:  GameEffectsData,
+	themes:   []Theme,
+}
+
+game_data: GameData
 
 Tile :: struct {
 	row: i32,
@@ -39,48 +153,6 @@ Tile :: struct {
 
 Frags :: [LETTER_COUNT]u32
 Runes :: [LETTER_COUNT]u32
-
-FRAG_LETTERS := [LETTER_COUNT]rune {
-	'A',
-	'B',
-	'C',
-	'D',
-	'E',
-	'F',
-	'G',
-	'H',
-	'I',
-	'J',
-	'K',
-	'L',
-	'M',
-	'N',
-	'O',
-	'P',
-	'Q',
-	'R',
-	'S',
-	'T',
-	'U',
-	'V',
-	'W',
-	'X',
-	'Y',
-	'Z',
-}
-
-WORDLE_SOLUTIONS := [WORDLE_SOLUTION_COUNT]string {
-	"CRANE",
-	"SLATE",
-	"BRICK",
-	"PLANT",
-	"GHOST",
-	"FLAME",
-	"STORM",
-	"CHARM",
-	"BLOOM",
-	"TRACE",
-}
 
 Grid :: struct {
 	tiles:         []Tile,
@@ -105,7 +177,7 @@ Selector :: struct {
 }
 
 SelectorBuffer :: struct {
-	letters: [5]rune,
+	letters: [CRAFTING_SELECTION_CAPACITY]rune,
 	count:   i32,
 }
 
@@ -117,7 +189,7 @@ GameView :: enum {
 }
 
 CraftingState :: struct {
-	selected:     [5]rune,
+	selected:     [CRAFTING_SELECTION_CAPACITY]rune,
 	count:        i32,
 	crafted_rune: rune,
 }

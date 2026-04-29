@@ -17,8 +17,8 @@ tile_row_step :: proc(cell_size: i32, gap: i32) -> i32 {
 }
 
 screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
-	scale_x := f32(screen_width) / f32(VIRTUAL_SCREEN_WIDTH)
-	scale_y := f32(screen_height) / f32(VIRTUAL_SCREEN_HEIGHT)
+	scale_x := f32(screen_width) / f32(game_data.screen.virtual_width)
+	scale_y := f32(screen_height) / f32(game_data.screen.virtual_height)
 	if scale_y < scale_x do return scale_y
 	return scale_x
 }
@@ -65,32 +65,37 @@ selector_letter_position :: proc(
 }
 
 grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
-	grid_width := GRID_COLS * BASE_CELL_SIZE + (GRID_COLS - 1) * BASE_GAP
-	base_height := grid_tile_base_height(BASE_CELL_SIZE)
-	grid_height := GRID_ROWS * (BASE_CELL_SIZE + base_height) + (GRID_ROWS - 1) * BASE_GAP
+	grid_width :=
+		game_data.grid.cols * game_data.grid.cell_size +
+		(game_data.grid.cols - 1) * game_data.grid.gap
+	base_height := grid_tile_base_height(game_data.grid.cell_size)
+	grid_height :=
+		game_data.grid.rows * (game_data.grid.cell_size + base_height) +
+		(game_data.grid.rows - 1) * game_data.grid.gap
+	tile_count := game_data.grid.cols * game_data.grid.rows
 
 	grid := Grid {
-		tiles         = make([]Tile, GRID_COLS * GRID_ROWS),
-		frags         = make([]rune, GRID_COLS * GRID_ROWS),
-		runes         = make([]rune, GRID_COLS * GRID_ROWS),
-		frag_exp      = make([]u32, GRID_COLS * GRID_ROWS),
-		rune_exp      = make([]u32, GRID_COLS * GRID_ROWS),
-		cols          = GRID_COLS,
-		rows          = GRID_ROWS,
-		cell_size     = BASE_CELL_SIZE,
-		gap           = BASE_GAP,
+		tiles         = make([]Tile, tile_count),
+		frags         = make([]rune, tile_count),
+		runes         = make([]rune, tile_count),
+		frag_exp      = make([]u32, tile_count),
+		rune_exp      = make([]u32, tile_count),
+		cols          = game_data.grid.cols,
+		rows          = game_data.grid.rows,
+		cell_size     = game_data.grid.cell_size,
+		gap           = game_data.grid.gap,
 		screen_width  = virtual_width,
 		screen_height = virtual_height,
 		offset_x      = i32((virtual_width - i32(grid_width)) / 2),
 		offset_y      = i32((virtual_height - i32(grid_height)) / 2),
 	}
 
-	i := 0
-	for row in 0 ..< GRID_ROWS {
-		for col in 0 ..< GRID_COLS {
+	i: i32 = 0
+	for row in 0 ..< game_data.grid.rows {
+		for col in 0 ..< game_data.grid.cols {
 			grid.tiles[i] = Tile{i32(row), i32(col)}
-			grid.frag_exp[i] = FRAG_TILE_EXP_REWARD
-			grid.rune_exp[i] = RUNE_TILE_EXP_REWARD
+			grid.frag_exp[i] = game_data.grid.frag_tile_exp
+			grid.rune_exp[i] = game_data.grid.rune_tile_exp
 			i += 1
 		}
 	}
@@ -99,7 +104,11 @@ grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
 }
 
 selector_new :: proc(grid: Grid) -> Selector {
-	return Selector{row = grid.rows / 2, col = grid.cols / 2}
+	return Selector {
+		row = clamp(game_data.grid.selector_row, 0, grid.rows - 1),
+		col = clamp(game_data.grid.selector_col, 0, grid.cols - 1),
+		down = game_data.grid.selector_down,
+	}
 }
 
 game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
@@ -110,7 +119,7 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 		wordle = wordle_state_new(),
 		show_frags = true,
 		view = .Menu,
-		theme = THEMES[0],
+		theme = game_data.themes[0],
 		theme_index = 0,
 		ui = ui_state_new(.Menu, 0),
 		menu_selection = 0,
@@ -120,14 +129,14 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 }
 
 game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_height: i32) {
-	scale_x := f32(virtual_width) / f32(VIRTUAL_SCREEN_WIDTH)
-	scale_y := f32(virtual_height) / f32(VIRTUAL_SCREEN_HEIGHT)
+	scale_x := f32(virtual_width) / f32(game_data.screen.virtual_width)
+	scale_y := f32(virtual_height) / f32(game_data.screen.virtual_height)
 	scale := scale_x
 	if scale_y < scale_x do scale = scale_y
 
-	state.grid.cell_size = i32(f32(BASE_CELL_SIZE) * scale + 0.5)
+	state.grid.cell_size = i32(f32(game_data.grid.cell_size) * scale + 0.5)
 	if state.grid.cell_size < 1 do state.grid.cell_size = 1
-	state.grid.gap = i32(f32(BASE_GAP) * scale + 0.5)
+	state.grid.gap = i32(f32(game_data.grid.gap) * scale + 0.5)
 	if state.grid.gap < 1 do state.grid.gap = 1
 	state.grid.screen_width = virtual_width
 	state.grid.screen_height = virtual_height
@@ -174,8 +183,8 @@ game_toggle_frag_rune_view :: proc(state: ^GameState) {
 }
 
 game_cycle_theme :: proc(state: ^GameState) {
-	state.theme_index = (state.theme_index + 1) % i32(len(THEMES))
-	state.theme = THEMES[state.theme_index]
+	state.theme_index = (state.theme_index + 1) % i32(len(game_data.themes))
+	state.theme = game_data.themes[state.theme_index]
 }
 
 game_set_view :: proc(state: ^GameState, view: GameView) {
@@ -208,7 +217,7 @@ crafting_selected_count_for_letter :: proc(crafting: CraftingState, letter: rune
 }
 
 crafting_push_letter :: proc(crafting: ^CraftingState, frag_counts: Frags, letter: rune) {
-	if crafting.count >= i32(len(crafting.selected[:])) do return
+	if crafting.count >= game_data.crafting.selection_capacity do return
 
 	frag_index := i32(letter - 'A')
 	if frag_index < 0 || frag_index >= LETTER_COUNT do return
@@ -236,21 +245,24 @@ wordle_state_new :: proc() -> WordleState {
 }
 
 wordle_solution_index :: proc(wordle: WordleState) -> i32 {
-	return i32(wordle.level % WORDLE_SOLUTION_COUNT)
+	return i32(wordle.level % u32(len(game_data.wordle.solutions)))
 }
 
 wordle_solution_string_to_runes :: proc(solution: string) -> [WORDLE_WORD_LEN]rune {
 	letters := [WORDLE_WORD_LEN]rune{}
-	for i in 0 ..< WORDLE_WORD_LEN {
-		if i < len(solution) {
-			letters[i] = rune(solution[i])
-		}
+	i: i32 = 0
+	for letter in solution {
+		if i >= game_data.wordle.word_length do break
+		letters[i] = letter
+		i += 1
 	}
 	return letters
 }
 
 wordle_current_solution :: proc(wordle: WordleState) -> [WORDLE_WORD_LEN]rune {
-	return wordle_solution_string_to_runes(WORDLE_SOLUTIONS[wordle_solution_index(wordle)])
+	return wordle_solution_string_to_runes(
+		game_data.wordle.solutions[wordle_solution_index(wordle)],
+	)
 }
 
 wordle_is_viewing_current_level :: proc(wordle: WordleState) -> bool {
@@ -260,7 +272,7 @@ wordle_is_viewing_current_level :: proc(wordle: WordleState) -> bool {
 wordle_push_letter :: proc(wordle: ^WordleState, letter: rune) {
 	if !wordle_is_viewing_current_level(wordle^) do return
 	if wordle.substate != .Playing do return
-	if wordle.current_count < WORDLE_WORD_LEN {
+	if wordle.current_count < game_data.wordle.word_length {
 		wordle.current_guess[wordle.current_count] = letter
 		wordle.current_count += 1
 	}
@@ -276,7 +288,7 @@ wordle_pop_letter :: proc(wordle: ^WordleState) {
 }
 
 wordle_clear_current_guess :: proc(wordle: ^WordleState) {
-	for i in 0 ..< WORDLE_WORD_LEN {
+	for i in 0 ..< game_data.wordle.word_length {
 		wordle.current_guess[i] = 0
 	}
 	wordle.current_count = 0
@@ -291,7 +303,7 @@ wordle_evaluate_guess :: proc(
 	}
 	remaining_counts := Frags{}
 
-	for i in 0 ..< WORDLE_WORD_LEN {
+	for i in 0 ..< game_data.wordle.word_length {
 		if guess[i] == solution[i] {
 			result.feedback[i] = .Correct
 		} else {
@@ -302,7 +314,7 @@ wordle_evaluate_guess :: proc(
 		}
 	}
 
-	for i in 0 ..< WORDLE_WORD_LEN {
+	for i in 0 ..< game_data.wordle.word_length {
 		if result.feedback[i] == .Correct do continue
 
 		guess_index := i32(guess[i] - 'A')
@@ -329,4 +341,36 @@ wordle_visible_row_count :: proc(screen_height: i32, start_y: i32, row_step: i32
 	visible_rows := (screen_height - start_y - row_step) / row_step
 	if visible_rows < 1 do visible_rows = 1
 	return visible_rows
+}
+
+game_apply_data_reload :: proc(state: ^GameState) {
+	if state.theme_index < 0 || state.theme_index >= i32(len(game_data.themes)) {
+		state.theme_index = 0
+	}
+	state.theme = game_data.themes[state.theme_index]
+
+	old_grid := state.grid
+	state.grid = grid_new(state.screen_width, state.screen_height)
+	copy_count := min(len(old_grid.frags), len(state.grid.frags))
+	for i in 0 ..< copy_count {
+		state.grid.frags[i] = old_grid.frags[i]
+		state.grid.runes[i] = old_grid.runes[i]
+		state.grid.frag_exp[i] = game_data.grid.frag_tile_exp
+		state.grid.rune_exp[i] = game_data.grid.rune_tile_exp
+	}
+	delete(old_grid.tiles)
+	delete(old_grid.frags)
+	delete(old_grid.runes)
+	delete(old_grid.frag_exp)
+	delete(old_grid.rune_exp)
+	selector_move(&state.selector, 0, 0, state.grid)
+	state.selector_buffer.count = min(
+		state.selector_buffer.count,
+		game_data.crafting.selection_capacity,
+	)
+	state.crafting.count = min(state.crafting.count, game_data.crafting.selection_capacity)
+	if state.wordle.current_count > game_data.wordle.word_length {
+		state.wordle.current_count = game_data.wordle.word_length
+	}
+	game_update_screen_size(state, state.screen_width, state.screen_height)
 }
