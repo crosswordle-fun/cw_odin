@@ -173,7 +173,7 @@ game_toggle_frag_rune_view :: proc(state: ^GameState) {
 }
 
 game_cycle_theme :: proc(state: ^GameState) {
-	state.theme_index = (state.theme_index + 1) % THEME_COUNT
+	state.theme_index = (state.theme_index + 1) % i32(len(THEMES))
 	state.theme = THEMES[state.theme_index]
 }
 
