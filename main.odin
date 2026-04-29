@@ -37,6 +37,10 @@ build_view_frame_static :: proc(
 	case .Crafting:
 		build_crafting_mode_view(frame, ctx, &view_state)
 	}
+
+	if gameplay_view_index(view) >= 0 {
+		build_gameplay_fixed_ui(&frame.fixed_ui, ctx, &view_state)
+	}
 }
 
 build_current_view_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
@@ -57,6 +61,8 @@ build_current_view_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 	if state.view != frame_view {
 		render_frame_clear(frame)
 		build_view_frame_static(frame, ctx, state, state.view)
+	} else if gameplay_view_index(state.view) >= 0 {
+		build_gameplay_fixed_ui(&frame.fixed_ui, ctx, state)
 	}
 }
 
@@ -65,6 +71,7 @@ main :: proc() {
 	rl.SetConfigFlags(rl.ConfigFlags{.WINDOW_RESIZABLE})
 
 	rl.InitWindow(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT, "CROSSWORDLE")
+	if !rl.IsWindowReady() do return
 	rl.SetExitKey(rl.KeyboardKey(0))
 	defer rl.CloseWindow()
 	game_font_load()
@@ -120,8 +127,15 @@ main :: proc() {
 				ctx.screen_width,
 				ctx.screen_height,
 			)
-			flush_render_frame_offset(previous_frame, previous_offset)
-			flush_render_frame_offset(render_frame, current_offset)
+			if gameplay_view_index(state.ui.previous_view) >= 0 &&
+			   gameplay_view_index(state.view) >= 0 {
+				flush_render_frame_moving_offset_skip_background(previous_frame, previous_offset)
+				flush_render_frame_moving_offset_skip_background(render_frame, current_offset)
+				flush_render_buffer(render_frame.fixed_ui)
+			} else {
+				flush_render_frame_offset(previous_frame, previous_offset)
+				flush_render_frame_offset(render_frame, current_offset)
+			}
 		} else {
 			flush_render_frame(render_frame)
 		}

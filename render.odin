@@ -43,9 +43,10 @@ RenderBuffer :: struct {
 }
 
 RenderFrame :: struct {
-	world:   RenderBuffer,
-	ui:      RenderBuffer,
-	overlay: RenderBuffer,
+	world:    RenderBuffer,
+	ui:       RenderBuffer,
+	fixed_ui: RenderBuffer,
+	overlay:  RenderBuffer,
 }
 
 RenderContext :: struct {
@@ -65,6 +66,7 @@ render_frame_new :: proc() -> RenderFrame {
 	return RenderFrame {
 		world = render_buffer_new(),
 		ui = render_buffer_new(),
+		fixed_ui = render_buffer_new(),
 		overlay = render_buffer_new(),
 	}
 }
@@ -76,6 +78,7 @@ render_buffer_destroy :: proc(buffer: ^RenderBuffer) {
 render_frame_destroy :: proc(frame: ^RenderFrame) {
 	render_buffer_destroy(&frame.world)
 	render_buffer_destroy(&frame.ui)
+	render_buffer_destroy(&frame.fixed_ui)
 	render_buffer_destroy(&frame.overlay)
 }
 
@@ -114,6 +117,7 @@ measure_text_width :: proc(label: cstring, font_size: i32) -> i32 {
 render_frame_clear :: proc(frame: ^RenderFrame) {
 	clear(&frame.world.commands)
 	clear(&frame.ui.commands)
+	clear(&frame.fixed_ui.commands)
 	clear(&frame.overlay.commands)
 }
 
@@ -362,8 +366,15 @@ push_letter_tile :: proc(
 	}
 }
 
-flush_render_buffer_offset :: proc(buffer: RenderBuffer, offset: rl.Vector2) {
-	for i in 0 ..< len(buffer.commands) {
+flush_render_buffer_offset_from :: proc(
+	buffer: RenderBuffer,
+	offset: rl.Vector2,
+	start_index: int,
+) {
+	start := start_index
+	if start < 0 do start = 0
+	if start > len(buffer.commands) do start = len(buffer.commands)
+	for i in start ..< len(buffer.commands) {
 		command := buffer.commands[i]
 		if command.additive {
 			rl.BeginBlendMode(.ADDITIVE)
@@ -443,12 +454,29 @@ flush_render_buffer_offset :: proc(buffer: RenderBuffer, offset: rl.Vector2) {
 	}
 }
 
+flush_render_buffer_offset :: proc(buffer: RenderBuffer, offset: rl.Vector2) {
+	flush_render_buffer_offset_from(buffer, offset, 0)
+}
+
 flush_render_buffer :: proc(buffer: RenderBuffer) {
 	flush_render_buffer_offset(buffer, rl.Vector2{0, 0})
 }
 
 flush_render_frame_offset :: proc(frame: RenderFrame, offset: rl.Vector2) {
 	flush_render_buffer_offset(frame.world, offset)
+	flush_render_buffer_offset(frame.ui, offset)
+	flush_render_buffer_offset(frame.fixed_ui, offset)
+	flush_render_buffer_offset(frame.overlay, offset)
+}
+
+flush_render_frame_moving_offset :: proc(frame: RenderFrame, offset: rl.Vector2) {
+	flush_render_buffer_offset(frame.world, offset)
+	flush_render_buffer_offset(frame.ui, offset)
+	flush_render_buffer_offset(frame.overlay, offset)
+}
+
+flush_render_frame_moving_offset_skip_background :: proc(frame: RenderFrame, offset: rl.Vector2) {
+	flush_render_buffer_offset_from(frame.world, offset, 1)
 	flush_render_buffer_offset(frame.ui, offset)
 	flush_render_buffer_offset(frame.overlay, offset)
 }
