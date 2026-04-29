@@ -416,6 +416,12 @@ build_mode_tabs :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameVie
 	)
 }
 
+build_gameplay_fixed_ui :: proc(buffer: ^RenderBuffer, ctx: RenderContext, state: ^GameState) {
+	build_mode_tabs(buffer, ctx, state.view)
+	build_exp_hud(buffer, ctx, state.exp, state.ui)
+	build_active_inventory_counts(buffer, ctx, state)
+}
+
 build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: UiState) {
 	font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
 	x := scaled_i32(24, ctx.scale)
@@ -1006,10 +1012,7 @@ build_wordle_won_panel :: proc(
 }
 
 build_wordle_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
-	build_mode_tabs(&frame.ui, ctx, state.view)
-	build_exp_hud(&frame.ui, ctx, state.exp, state.ui)
 	build_wordle_level(&frame.ui, ctx, wordle_display_level(state.wordle))
-	build_active_inventory_counts(&frame.ui, ctx, state)
 
 	switch state.wordle.view_mode {
 	case .History:
@@ -1056,9 +1059,6 @@ crafting_status_label :: proc(crafting: CraftingState) -> cstring {
 }
 
 build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
-	build_mode_tabs(&frame.ui, ctx, state.view)
-	build_exp_hud(&frame.ui, ctx, state.exp, state.ui)
-	build_title(&frame.ui, ctx, "CRAFTING", scaled_i32(105, ctx.scale), ctx.theme.text)
 	build_centered_text(
 		&frame.ui,
 		"FRAGMENTS",
@@ -1172,13 +1172,10 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		)
 	}
 
-	build_active_inventory_counts(&frame.ui, ctx, state)
 	draw_ui_effects(&frame.overlay, ctx, state.ui)
 }
 
 build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
-	build_mode_tabs(&frame.ui, ctx, state.view)
-	build_exp_hud(&frame.ui, ctx, state.exp, state.ui)
 	build_crossword_grid(
 		&frame.world,
 		state.grid,
@@ -1214,6 +1211,5 @@ build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^G
 		)
 	}
 
-	build_active_inventory_counts(&frame.ui, ctx, state)
 	draw_ui_effects(&frame.overlay, ctx, state.ui)
 }

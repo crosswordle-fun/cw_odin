@@ -4,6 +4,8 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
+VIEW_TRANSITION_DURATION :: f32(0.34)
+
 saturate :: proc(value: f32) -> f32 {
 	if value < 0 do return 0
 	if value > 1 do return 1
@@ -89,8 +91,68 @@ ui_update :: proc(state: ^GameState, dt: f32) {
 
 ui_note_view_change :: proc(ui: ^UiState, previous: GameView) {
 	ui.previous_view = previous
+	ui.previous_view_enter_time = ui.view_enter_time
 	ui.view_enter_time = ui.time
 	ui.invalid_age = 1
+}
+
+gameplay_view_index :: proc(view: GameView) -> i32 {
+	switch view {
+	case .Cross:
+		return 0
+	case .Wordle:
+		return 1
+	case .Crafting:
+		return 2
+	case .Menu:
+		return -1
+	}
+	return -1
+}
+
+ui_view_transition_active :: proc(ui: UiState) -> bool {
+	return ui.time - ui.view_enter_time < VIEW_TRANSITION_DURATION
+}
+
+ui_view_transition_offsets :: proc(
+	ui: UiState,
+	current_view: GameView,
+	screen_width: i32,
+	screen_height: i32,
+) -> (
+	previous_offset: rl.Vector2,
+	current_offset: rl.Vector2,
+) {
+	age := ui.time - ui.view_enter_time
+	if age >= VIEW_TRANSITION_DURATION || ui.previous_view == current_view {
+		return rl.Vector2{0, 0}, rl.Vector2{0, 0}
+	}
+
+	t := rl.EaseCubicOut(saturate(age / VIEW_TRANSITION_DURATION), 0, 1, 1)
+	previous_start := rl.Vector2{0, 0}
+	previous_end := rl.Vector2{0, 0}
+	current_start := rl.Vector2{0, 0}
+	current_end := rl.Vector2{0, 0}
+
+	previous_index := gameplay_view_index(ui.previous_view)
+	current_index := gameplay_view_index(current_view)
+	if ui.previous_view == .Menu && current_view != .Menu {
+		previous_end = rl.Vector2{0, -f32(screen_height)}
+		current_start = rl.Vector2{0, f32(screen_height)}
+	} else if ui.previous_view != .Menu && current_view == .Menu {
+		previous_end = rl.Vector2{0, f32(screen_height)}
+		current_start = rl.Vector2{0, -f32(screen_height)}
+	} else if previous_index >= 0 && current_index >= 0 {
+		direction := f32(1)
+		if current_index < previous_index do direction = -1
+		previous_end = rl.Vector2{-direction * f32(screen_width), 0}
+		current_start = rl.Vector2{direction * f32(screen_width), 0}
+	}
+
+	return rl.Vector2 {
+		rl.Lerp(previous_start.x, previous_end.x, t),
+		rl.Lerp(previous_start.y, previous_end.y, t),
+	}, rl.Vector2{rl.Lerp(current_start.x, current_end.x, t), rl.Lerp(current_start.y, current_end.y, t)}
 }
 
 ui_note_invalid :: proc(ui: ^UiState) {
@@ -238,7 +300,7 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 
 draw_view_transition :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) {
 	age := ui.time - ui.view_enter_time
-	if age >= 0.28 do return
+	if age >= VIEW_TRANSITION_DURATION do return
 	alpha := u8(120 * (1 - ease_out(age / 0.28)))
 	push_rect(
 		buffer,

@@ -177,5 +177,9 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 		}
 	}
 
+	if rl.IsKeyPressed(rl.KeyboardKey.LEFT_SHIFT) || rl.IsKeyPressed(rl.KeyboardKey.RIGHT_SHIFT) {
+		game_toggle_frag_rune_view(state)
+	}
+
 	build_wordle_mode_view(frame, ctx, state)
 }
