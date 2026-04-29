@@ -453,6 +453,15 @@ build_wordle_level :: proc(buffer: ^RenderBuffer, ctx: RenderContext, level: u32
 	build_centered_text(buffer, label, ctx.screen_width, y, font_size, ctx.theme.text)
 }
 
+wordle_display_level :: proc(wordle: WordleState) -> u32 {
+	if wordle.view_mode == .History &&
+	   wordle.history_index >= 0 &&
+	   wordle.history_index < i32(len(wordle.history)) {
+		return wordle.history[wordle.history_index].level
+	}
+	return wordle.level
+}
+
 inventory_count_label :: proc(count: u32) -> cstring {
 	if count > 99 do return "99+"
 	return fmt.caprintf("%d", count)
@@ -889,26 +898,21 @@ build_wordle_history_board :: proc(
 
 	history_reward_size := cell_size / 2
 	history_reward_font_size := font_size / 2
-	margin := history_reward_size
-	exp_x := margin
-	exp_y :=
-		ctx.screen_height -
-		history_reward_size -
-		margin +
-		(history_reward_size - scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)) / 2
+	margin := scaled_i32(40, ctx.scale)
+	reward_gap := scaled_i32(14, ctx.scale)
+	reward_y := ctx.screen_height - history_reward_size - margin
 	exp_label := fmt.caprintf("+%d EXP", record.reward_exp)
-	build_text(
-		buffer,
-		exp_label,
-		exp_x,
-		exp_y,
-		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
-		ctx.theme.exp,
-	)
+	exp_font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
+	exp_width := measure_text_width(exp_label, exp_font_size)
+	reward_x := margin
+	exp_x := reward_x
+	exp_y := reward_y + (history_reward_size - exp_font_size) / 2
+	tile_x := reward_x + exp_width + reward_gap
+	build_text(buffer, exp_label, exp_x, exp_y, exp_font_size, ctx.theme.exp)
 	build_tile(
 		buffer,
-		ctx.screen_width - history_reward_size - margin,
-		ctx.screen_height - history_reward_size - margin,
+		tile_x,
+		reward_y,
 		history_reward_size,
 		record.reward_fragment,
 		ctx.theme.highlight_fragment,
@@ -1002,7 +1006,7 @@ build_wordle_won_panel :: proc(
 build_wordle_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	build_mode_tabs(&frame.ui, ctx, state.view)
 	build_exp_hud(&frame.ui, ctx, state.exp, state.ui)
-	build_wordle_level(&frame.ui, ctx, state.wordle.level)
+	build_wordle_level(&frame.ui, ctx, wordle_display_level(state.wordle))
 	build_active_inventory_counts(&frame.ui, ctx, state)
 
 	switch state.wordle.view_mode {
