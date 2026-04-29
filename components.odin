@@ -192,15 +192,6 @@ build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
 		base_height + base_overlap,
 		tile.base_color,
 	)
-	push_rect_lines(
-		buffer,
-		tile.x,
-		tile.y + tile.face_size - base_overlap,
-		tile.face_size,
-		base_height + base_overlap,
-		2,
-		rl.BLACK,
-	)
 	push_rect(buffer, tile.x, face_y, tile.face_size, tile.face_size, tile.face_color)
 	push_rect_lines(buffer, tile.x, face_y, tile.face_size, tile.face_size, 2, rl.BLACK)
 
