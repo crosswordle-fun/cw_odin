@@ -102,8 +102,8 @@ menu_selection_rect :: proc(layout: MenuLayout, selection: MenuSelection) -> (x:
 
 build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout) {
 	title_label := "CROSSWORDLE"
-	face_color := rl.Color{70, 106, 152, 255}
-	base_color := rl.Color{44, 60, 90, 255}
+	face_color := rl.GRAY
+	base_color := rl.DARKGRAY
 
 	x := layout.title_x
 	for i in 0 ..< len(title_label) {
