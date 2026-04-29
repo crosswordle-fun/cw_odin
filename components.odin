@@ -131,6 +131,20 @@ tile_click_lift :: proc(time: f32, lift: i32, phase: i32 = 0) -> i32 {
 	return 0
 }
 
+wordle_submit_click_lift :: proc(age: f32, lift: i32) -> i32 {
+	if lift <= 0 do return 0
+	if age < 0 do return -lift
+	if age < 0.24 {
+		t := rl.EaseBackOut(age, 0, 1, 0.24)
+		return -lift + i32(f32(lift) * 1.18 * t + 0.5)
+	}
+	if age < 0.46 {
+		settle := saturate((age - 0.24) / 0.22)
+		return i32(f32(lift) * 0.18 * (1 - ease_out(settle)) + 0.5)
+	}
+	return 0
+}
+
 build_tile_scaled :: proc(
 	buffer: ^RenderBuffer,
 	x: i32,
@@ -536,22 +550,23 @@ build_wordle_guess_row :: proc(
 ) {
 	for col in 0 ..< WORDLE_WORD_LEN {
 		tile_x := x + i32(col) * (cell_size + gap)
-		scale := f32(1)
+		color := wordle_feedback_color(guess.feedback[col], theme)
+		face_lift := i32(0)
 		if ui.wordle_reveal_guess_row == row_index {
-			delay := f32(col) * 0.08
-			t := saturate((ui.wordle_reveal_age - delay) / 0.28)
-			scale = 0.74 + 0.26 * rl.EaseBackOut(t, 0, 1, 1)
+			lift := grid_tile_base_height(cell_size)
+			face_lift = wordle_submit_click_lift(ui.wordle_reveal_age, lift)
+			if face_lift < 0 do color = theme.wordle_empty
 		}
-		build_tile_scaled(
+		build_tile_with_face_lift(
 			buffer,
 			tile_x,
 			y,
 			cell_size,
 			guess.letters[col],
-			wordle_feedback_color(guess.feedback[col], theme),
+			color,
 			font_size,
 			theme,
-			scale,
+			face_lift,
 		)
 	}
 }
