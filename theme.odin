@@ -31,7 +31,7 @@ THEME_COUNT :: 3
 
 THEMES := [?]Theme {
 	Theme {
-		background = TAILWIND_WHITE,
+		background = TAILWIND_GRAY_100,
 		canvas = TAILWIND_BLACK,
 		text = TAILWIND_BLACK,
 		text_inverted = TAILWIND_WHITE,
@@ -49,7 +49,7 @@ THEMES := [?]Theme {
 		wordle_present = TAILWIND_YELLOW_400,
 		wordle_miss = TAILWIND_GRAY_400,
 		wordle_empty = TAILWIND_GRAY_200,
-		button_fill = TAILWIND_BLACK,
+		button_fill = TAILWIND_GRAY_600,
 		button_shadow = TAILWIND_GRAY_200,
 		button_text = TAILWIND_BLACK,
 		button_text_inverted = TAILWIND_WHITE,
