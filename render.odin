@@ -362,7 +362,7 @@ push_letter_tile :: proc(
 	}
 }
 
-flush_render_buffer :: proc(buffer: RenderBuffer) {
+flush_render_buffer_offset :: proc(buffer: RenderBuffer, offset: rl.Vector2) {
 	for i in 0 ..< len(buffer.commands) {
 		command := buffer.commands[i]
 		if command.additive {
@@ -371,38 +371,46 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 		switch command.kind {
 		case .Rect:
 			rl.DrawRectangle(
-				i32(command.rect.x),
-				i32(command.rect.y),
+				i32(command.rect.x + offset.x),
+				i32(command.rect.y + offset.y),
 				i32(command.rect.width),
 				i32(command.rect.height),
 				command.color,
 			)
 		case .Rect_Lines:
-			rl.DrawRectangleLinesEx(command.rect, command.thickness, command.color)
+			rect := command.rect
+			rect.x += offset.x
+			rect.y += offset.y
+			rl.DrawRectangleLinesEx(rect, command.thickness, command.color)
 		case .Rect_Gradient_V:
 			rl.DrawRectangleGradientV(
-				i32(command.rect.x),
-				i32(command.rect.y),
+				i32(command.rect.x + offset.x),
+				i32(command.rect.y + offset.y),
 				i32(command.rect.width),
 				i32(command.rect.height),
 				command.color,
 				command.color2,
 			)
 		case .Circle:
-			rl.DrawCircleV(command.point, command.radius, command.color)
+			rl.DrawCircleV(command.point + offset, command.radius, command.color)
 		case .Circle_Gradient:
 			rl.DrawCircleGradient(
-				i32(command.point.x),
-				i32(command.point.y),
+				i32(command.point.x + offset.x),
+				i32(command.point.y + offset.y),
 				command.radius,
 				command.color,
 				command.color2,
 			)
 		case .Line:
-			rl.DrawLineEx(command.point, command.point2, command.thickness, command.color)
+			rl.DrawLineEx(
+				command.point + offset,
+				command.point2 + offset,
+				command.thickness,
+				command.color,
+			)
 		case .Poly:
 			rl.DrawPoly(
-				command.point,
+				command.point + offset,
 				command.sides,
 				command.radius,
 				command.rotation,
@@ -412,7 +420,7 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 			rl.DrawTextEx(
 				game_font,
 				command.text,
-				rl.Vector2{command.rect.x, command.rect.y},
+				rl.Vector2{command.rect.x + offset.x, command.rect.y + offset.y},
 				f32(command.font_size),
 				TEXT_SPACING,
 				command.color,
@@ -421,7 +429,7 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 			rl.DrawTextPro(
 				game_font,
 				command.text,
-				rl.Vector2{command.rect.x, command.rect.y},
+				rl.Vector2{command.rect.x + offset.x, command.rect.y + offset.y},
 				rl.Vector2{0, 0},
 				command.rotation,
 				f32(command.font_size),
@@ -435,8 +443,16 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 	}
 }
 
+flush_render_buffer :: proc(buffer: RenderBuffer) {
+	flush_render_buffer_offset(buffer, rl.Vector2{0, 0})
+}
+
+flush_render_frame_offset :: proc(frame: RenderFrame, offset: rl.Vector2) {
+	flush_render_buffer_offset(frame.world, offset)
+	flush_render_buffer_offset(frame.ui, offset)
+	flush_render_buffer_offset(frame.overlay, offset)
+}
+
 flush_render_frame :: proc(frame: RenderFrame) {
-	flush_render_buffer(frame.world)
-	flush_render_buffer(frame.ui)
-	flush_render_buffer(frame.overlay)
+	flush_render_frame_offset(frame, rl.Vector2{0, 0})
 }

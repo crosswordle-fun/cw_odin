@@ -208,20 +208,21 @@ UiTilePop :: struct {
 }
 
 UiState :: struct {
-	time:                    f32,
-	dt:                      f32,
-	view_enter_time:         f32,
-	previous_view:           GameView,
-	last_exp:                u32,
-	exp_gain:                u32,
-	exp_gain_age:            f32,
-	invalid_age:             f32,
-	wordle_reveal_age:       f32,
-	wordle_reveal_guess_row: i32,
-	crafted_rune_age:        f32,
-	particles:               [UI_PARTICLE_CAPACITY]UiParticle,
-	floating_text:           [UI_FLOATING_TEXT_CAPACITY]UiFloatingText,
-	tile_pops:               [UI_TILE_POP_CAPACITY]UiTilePop,
+	time:                     f32,
+	dt:                       f32,
+	view_enter_time:          f32,
+	previous_view:            GameView,
+	previous_view_enter_time: f32,
+	last_exp:                 u32,
+	exp_gain:                 u32,
+	exp_gain_age:             f32,
+	invalid_age:              f32,
+	wordle_reveal_age:        f32,
+	wordle_reveal_guess_row:  i32,
+	crafted_rune_age:         f32,
+	particles:                [UI_PARTICLE_CAPACITY]UiParticle,
+	floating_text:            [UI_FLOATING_TEXT_CAPACITY]UiFloatingText,
+	tile_pops:                [UI_TILE_POP_CAPACITY]UiTilePop,
 }
 
 GameState :: struct {
