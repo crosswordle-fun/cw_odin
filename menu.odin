@@ -79,18 +79,51 @@ menu_selection_to_state :: proc(selection: MenuSelection) -> i32 {
 	return 0
 }
 
+menu_title_drop_bounce :: proc(tile_age: f32) -> f32 {
+	if tile_age >= 0.5 do return 0
+	bounce := (1 - saturate(tile_age / 0.5)) * -28
+	if tile_age > 0 do bounce = -28 + rl.EaseBounceOut(tile_age, 0, 28, 0.5)
+	return bounce
+}
+
+menu_title_rebounce :: proc(tile_age: f32) -> f32 {
+	raise_duration := f32(0.38)
+	fall_duration := f32(0.52)
+	lift := f32(-22)
+
+	if tile_age < 0 do return 0
+	if tile_age < raise_duration {
+		return rl.EaseSineInOut(tile_age, 0, lift, raise_duration)
+	}
+
+	fall_age := tile_age - raise_duration
+	if fall_age < fall_duration {
+		return rl.EaseBounceOut(fall_age, lift, -lift, fall_duration)
+	}
+
+	return 0
+}
+
 build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme, ui: UiState) {
 	title_label := "CROSSWORDLE"
 	face_color := theme.surface
 	base_color := theme.surface_shadow
+	elapsed := ui.time - ui.view_enter_time
+	title_stagger := f32(0.045)
+	bounce_duration := f32(0.5)
+	rebounce_period := f32(3.0)
+	initial_drop_duration := bounce_duration + f32(len(title_label) - 1) * title_stagger
 
 	x := layout.title_x
 	for i in 0 ..< len(title_label) {
-		tile_age := ui.time - ui.view_enter_time - f32(i) * 0.045
-		bounce := f32(0)
-		if tile_age < 0.5 {
-			bounce = (1 - saturate(tile_age / 0.5)) * -28
-			if tile_age > 0 do bounce = -28 + rl.EaseBounceOut(tile_age, 0, 28, 0.5)
+		tile_age := elapsed - f32(i) * title_stagger
+		bounce := menu_title_drop_bounce(tile_age)
+		if elapsed >= initial_drop_duration + rebounce_period {
+			rebounce_elapsed := rl.Wrap(elapsed - initial_drop_duration, 0, rebounce_period)
+			rebounce_age := rebounce_elapsed - f32(i) * title_stagger
+			if rebounce_age >= 0 {
+				bounce = menu_title_rebounce(rebounce_age)
+			}
 		}
 		build_title_tile(
 			buffer,
