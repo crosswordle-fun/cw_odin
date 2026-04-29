@@ -291,7 +291,7 @@ build_button :: proc(
 	theme: Theme,
 ) {
 	lift: i32 = 0
-	if active do lift = height / 12
+	if !active do lift = height / 12
 	shadow_y := y + height / 9
 	push_rect(buffer, x, shadow_y, width, height, with_alpha(theme.button_shadow, 116))
 

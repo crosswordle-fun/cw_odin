@@ -78,21 +78,6 @@ menu_selection_to_state :: proc(selection: MenuSelection) -> i32 {
 	return 0
 }
 
-menu_selection_rect :: proc(layout: MenuLayout, selection: MenuSelection) -> (x: i32, y: i32, width: i32, height: i32) {
-	border_pad: i32 = 4
-	switch selection {
-	case .Start:
-		x = layout.button_x - border_pad
-		y = layout.start_y - border_pad
-	case .Exit:
-		x = layout.button_x - border_pad
-		y = layout.exit_y - border_pad
-	}
-	width = layout.button_width + border_pad * 2
-	height = layout.button_height + border_pad * 2
-	return
-}
-
 build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme, ui: UiState) {
 	title_label := "CROSSWORDLE"
 	face_color := theme.surface
@@ -164,16 +149,6 @@ build_menu_mode_view :: proc(
 		theme,
 	)
 
-	border_x, border_y, border_width, border_height := menu_selection_rect(layout, selection)
-	push_rect_lines(
-		&frame.overlay,
-		border_x,
-		border_y,
-		border_width,
-		border_height,
-		3,
-		rl.BLACK,
-	)
 	draw_ui_effects(&frame.overlay, ctx, ui)
 }
 
