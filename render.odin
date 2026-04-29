@@ -8,8 +8,6 @@ RENDER_BUFFER_CAPACITY :: 2048
 RenderCommandKind :: enum {
 	Rect,
 	Rect_Lines,
-	Rect_Rounded,
-	Rect_Rounded_Lines,
 	Rect_Gradient_V,
 	Circle,
 	Circle_Gradient,
@@ -31,8 +29,6 @@ RenderCommand :: struct {
 	rotation:  f32,
 	font_size: i32,
 	thickness: f32,
-	roundness: f32,
-	segments:  i32,
 	sides:     i32,
 	additive:  bool,
 }
@@ -129,50 +125,6 @@ push_rect_lines :: proc(
 			rect = rl.Rectangle{f32(x), f32(y), f32(width), f32(height)},
 			color = color,
 			thickness = thickness,
-		},
-	)
-}
-
-push_rect_rounded :: proc(
-	buffer: ^RenderBuffer,
-	x: i32,
-	y: i32,
-	width: i32,
-	height: i32,
-	roundness: f32,
-	color: rl.Color,
-) {
-	append(
-		&buffer.commands,
-		RenderCommand {
-			kind = .Rect_Rounded,
-			rect = rl.Rectangle{f32(x), f32(y), f32(width), f32(height)},
-			color = color,
-			roundness = roundness,
-			segments = 12,
-		},
-	)
-}
-
-push_rect_rounded_lines :: proc(
-	buffer: ^RenderBuffer,
-	x: i32,
-	y: i32,
-	width: i32,
-	height: i32,
-	roundness: f32,
-	thickness: f32,
-	color: rl.Color,
-) {
-	append(
-		&buffer.commands,
-		RenderCommand {
-			kind = .Rect_Rounded_Lines,
-			rect = rl.Rectangle{f32(x), f32(y), f32(width), f32(height)},
-			color = color,
-			thickness = thickness,
-			roundness = roundness,
-			segments = 12,
 		},
 	)
 }
@@ -386,10 +338,6 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 			)
 		case .Rect_Lines:
 			rl.DrawRectangleLinesEx(command.rect, command.thickness, command.color)
-		case .Rect_Rounded:
-			rl.DrawRectangleRounded(command.rect, command.roundness, command.segments, command.color)
-		case .Rect_Rounded_Lines:
-			rl.DrawRectangleRoundedLinesEx(command.rect, command.roundness, command.segments, command.thickness, command.color)
 		case .Rect_Gradient_V:
 			rl.DrawRectangleGradientV(
 				i32(command.rect.x),

@@ -145,8 +145,8 @@ build_menu_mode_view :: proc(
 	panel_y := layout.start_y - scaled_i32(28, ctx.scale)
 	panel_w := layout.button_width + scaled_i32(84, ctx.scale)
 	panel_h := layout.exit_y + layout.button_height - panel_y + scaled_i32(28, ctx.scale)
-	push_rect_rounded(&frame.ui, panel_x, panel_y + scaled_i32(8, ctx.scale), panel_w, panel_h, 0.12, with_alpha(theme.surface_shadow, 74))
-	push_rect_rounded(&frame.ui, panel_x, panel_y, panel_w, panel_h, 0.12, with_alpha(theme.surface, 230))
+	push_rect(&frame.ui, panel_x, panel_y + scaled_i32(8, ctx.scale), panel_w, panel_h, with_alpha(theme.surface_shadow, 74))
+	push_rect(&frame.ui, panel_x, panel_y, panel_w, panel_h, with_alpha(theme.surface, 230))
 	build_menu_title(&frame.ui, layout, theme, ui)
 	build_button(
 		&frame.ui,
@@ -173,13 +173,12 @@ build_menu_mode_view :: proc(
 
 	border_x, border_y, border_width, border_height := menu_selection_rect(layout, selection)
 	selection_pulse := 0.5 + 0.5 * math.sin(ui.time * 6)
-	push_rect_rounded_lines(
+	push_rect_lines(
 		&frame.overlay,
 		border_x,
 		border_y,
 		border_width,
 		border_height,
-		0.24,
 		3,
 		with_alpha(theme.text, u8(150 + selection_pulse * 80)),
 	)

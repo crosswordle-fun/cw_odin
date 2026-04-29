@@ -80,13 +80,12 @@ build_cozy_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
 		rl.Color{167, 114, 118, 34},
 		rl.Color{167, 114, 118, 0},
 	)
-	push_rect_rounded_lines(
+	push_rect_lines(
 		buffer,
 		scaled_i32(12, ctx.scale),
 		scaled_i32(12, ctx.scale),
 		ctx.screen_width - scaled_i32(24, ctx.scale),
 		ctx.screen_height - scaled_i32(24, ctx.scale),
-		0.03,
 		f32(scaled_i32(2, ctx.scale)),
 		rl.Color{128, 96, 67, 42},
 	)
@@ -145,8 +144,8 @@ build_tile_or_square :: proc(
 		return
 	}
 
-	push_rect_rounded(buffer, x, y, size, size, 0.18, empty_color)
-	push_rect_rounded_lines(buffer, x, y, size, size, 0.18, 2, with_alpha(theme.surface_shadow, 82))
+	push_rect(buffer, x, y, size, size, empty_color)
+	push_rect_lines(buffer, x, y, size, size, 2, with_alpha(theme.surface_shadow, 82))
 }
 
 TitleTile :: struct {
@@ -164,17 +163,16 @@ build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
 	base_height := tile.face_size / 10
 	if base_height < 1 do base_height = 1
 
-	push_rect_rounded(
+	push_rect(
 		buffer,
 		tile.x,
 		tile.y + tile.face_size,
 		tile.face_size,
 		base_height,
-		0.16,
 		tile.base_color,
 	)
-	push_rect_rounded(buffer, tile.x, tile.y, tile.face_size, tile.face_size, 0.16, tile.face_color)
-	push_rect_rounded_lines(buffer, tile.x + 2, tile.y + 2, tile.face_size - 4, tile.face_size - 4, 0.16, 2, with_alpha(rl.WHITE, 76))
+	push_rect(buffer, tile.x, tile.y, tile.face_size, tile.face_size, tile.face_color)
+	push_rect_lines(buffer, tile.x + 2, tile.y + 2, tile.face_size - 4, tile.face_size - 4, 2, with_alpha(rl.WHITE, 76))
 
 	if tile.letter != 0 {
 		label := fmt.caprintf("%c", tile.letter)
@@ -225,14 +223,14 @@ build_button :: proc(
 	lift: i32 = 0
 	if active do lift = height / 12
 	shadow_y := y + height / 9
-	push_rect_rounded(buffer, x, shadow_y, width, height, 0.32, with_alpha(theme.button_shadow, 116))
+	push_rect(buffer, x, shadow_y, width, height, with_alpha(theme.button_shadow, 116))
 
 	fill := theme.surface
 	if active {
 		fill = theme.button_fill
 	}
-	push_rect_rounded(buffer, x, y - lift, width, height, 0.32, fill)
-	push_rect_rounded_lines(buffer, x + 2, y - lift + 2, width - 4, height - 4, 0.32, 2, with_alpha(rl.WHITE, 86))
+	push_rect(buffer, x, y - lift, width, height, fill)
+	push_rect_lines(buffer, x + 2, y - lift + 2, width - 4, height - 4, 2, with_alpha(rl.WHITE, 86))
 
 	text_color := theme.button_text
 	if active do text_color = theme.button_text_inverted
@@ -322,7 +320,7 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: U
 	if ui.exp_gain_age < 0.42 do pulse = math.sin(ui.exp_gain_age * 22) * (1 - ui.exp_gain_age / 0.42)
 	badge_w := scaled_i32(132, ctx.scale) + i32(pulse * 5)
 	badge_h := scaled_i32(38, ctx.scale) + i32(pulse * 3)
-	push_rect_rounded(buffer, x, y, badge_w, badge_h, 0.42, with_alpha(ctx.theme.surface, 236))
+	push_rect(buffer, x, y, badge_w, badge_h, with_alpha(ctx.theme.surface, 236))
 	push_circle(buffer, f32(x + scaled_i32(20, ctx.scale)), f32(y + badge_h / 2), f32(scaled_i32(9, ctx.scale)), with_alpha(ctx.theme.exp, 220))
 	label := fmt.caprintf("EXP %d", exp)
 	build_text(buffer, label, x + scaled_i32(36, ctx.scale), y + (badge_h - font_size) / 2, font_size, ctx.theme.exp)
@@ -348,13 +346,12 @@ build_inventory_counts :: proc(
 	hud_width := item_width * 13 - 10
 	start_x := (ctx.screen_width - hud_width) / 2
 	start_y := ctx.screen_height - (row_height * 2) - 20
-	push_rect_rounded(
+	push_rect(
 		buffer,
 		start_x - scaled_i32(14, ctx.scale),
 		start_y - scaled_i32(10, ctx.scale),
 		hud_width + scaled_i32(28, ctx.scale),
 		row_height * 2 + scaled_i32(18, ctx.scale),
-		0.16,
 		with_alpha(ctx.theme.surface, 214),
 	)
 
@@ -405,8 +402,8 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid, theme: Theme, ui
 				pop_scale,
 			)
 		} else {
-			push_rect_rounded(buffer, x, y, grid.cell_size, grid.cell_size, 0.18, theme.empty_tile)
-			push_rect_rounded_lines(buffer, x + 1, y + 1, grid.cell_size - 2, grid.cell_size - 2, 0.18, 1, with_alpha(theme.surface_shadow, 62))
+			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, theme.empty_tile)
+			push_rect_lines(buffer, x + 1, y + 1, grid.cell_size - 2, grid.cell_size - 2, 1, with_alpha(theme.surface_shadow, 62))
 		}
 	}
 }
@@ -431,13 +428,12 @@ build_crossword_selector_overlay :: proc(
 	x, y := grid_tile_position(grid, selector.row, selector.col)
 	pulse := 0.5 + 0.5 * math.sin(ui.time * 5)
 	outline := f32(BASE_SELECTOR_OUTLINE) * f32(grid.cell_size) / f32(BASE_CELL_SIZE)
-	push_rect_rounded_lines(
+	push_rect_lines(
 		buffer,
 		x + i32(shake),
 		y,
 		grid.cell_size,
 		grid.cell_size,
-		0.18,
 		outline,
 		with_alpha(line_color, u8(170 + pulse * 70)),
 	)
@@ -452,7 +448,7 @@ build_crossword_selector_overlay :: proc(
 			prev_x, prev_y := grid_tile_position(grid, prev_row, prev_col)
 			push_line(buffer, f32(prev_x + grid.cell_size / 2) + shake, f32(prev_y + grid.cell_size / 2), center_x, center_y, f32(scaled_i32(5, scale)), with_alpha(line_color, 82))
 		}
-		push_rect_rounded_lines(buffer, tile_x + i32(shake), tile_y, grid.cell_size, grid.cell_size, 0.18, 3, line_color)
+		push_rect_lines(buffer, tile_x + i32(shake), tile_y, grid.cell_size, grid.cell_size, 3, line_color)
 		label := fmt.caprintf("%c", selector_buffer.letters[i])
 		build_text(
 			buffer,
