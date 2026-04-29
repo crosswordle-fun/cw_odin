@@ -100,10 +100,10 @@ menu_selection_rect :: proc(layout: MenuLayout, selection: MenuSelection) -> (x:
 	return
 }
 
-build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout) {
+build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme) {
 	title_label := "CROSSWORDLE"
-	face_color := THEME_SURFACE
-	base_color := THEME_SURFACE_SHADOW
+	face_color := theme.surface
+	base_color := theme.surface_shadow
 
 	x := layout.title_x
 	for i in 0 ..< len(title_label) {
@@ -117,7 +117,7 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout) {
 				face_color = face_color,
 				base_color = base_color,
 				font_size = layout.title_font_size,
-				text_color = THEME_TEXT,
+				text_color = theme.text,
 			},
 		)
 		x += layout.title_face_size + layout.title_gap
@@ -130,8 +130,9 @@ build_menu_mode_view :: proc(
 	start_hovered: bool,
 	exit_hovered: bool,
 	selection: MenuSelection,
+	theme: Theme,
 ) {
-	build_menu_title(&frame.ui, layout)
+	build_menu_title(&frame.ui, layout, theme)
 	build_button(
 		&frame.ui,
 		"START",
@@ -141,6 +142,7 @@ build_menu_mode_view :: proc(
 		layout.button_height,
 		layout.button_font,
 		start_hovered,
+		theme,
 	)
 	build_button(
 		&frame.ui,
@@ -151,6 +153,7 @@ build_menu_mode_view :: proc(
 		layout.button_height,
 		layout.button_font,
 		exit_hovered,
+		theme,
 	)
 
 	border_x, border_y, border_width, border_height := menu_selection_rect(layout, selection)
@@ -161,7 +164,7 @@ build_menu_mode_view :: proc(
 		border_width,
 		border_height,
 		3,
-		THEME_TEXT,
+		theme.text,
 	)
 }
 
@@ -205,5 +208,5 @@ menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSta
 	}
 
 	state.menu_selection = menu_selection_to_state(selection)
-	build_menu_mode_view(frame, layout, start_hovered, exit_hovered, selection)
+	build_menu_mode_view(frame, layout, start_hovered, exit_hovered, selection, ctx.theme)
 }

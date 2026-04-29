@@ -32,9 +32,10 @@ main :: proc() {
 		} else if escape_pressed {
 			state.should_quit = true
 		}
+		if rl.IsKeyPressed(rl.KeyboardKey.NINE) do game_cycle_theme(&state)
 
 		render_frame_clear(&render_frame)
-		ctx := render_context_new(state.screen_width, state.screen_height)
+		ctx := render_context_new(state.screen_width, state.screen_height, state.theme)
 		switch state.view {
 		case .Menu:
 			menu_mode_frame(&render_frame, ctx, &state)
@@ -49,7 +50,7 @@ main :: proc() {
 		if state.should_quit do break
 
 		rl.BeginTextureMode(render_target)
-		rl.ClearBackground(THEME_BACKGROUND)
+		rl.ClearBackground(ctx.theme.background)
 		flush_render_frame(render_frame)
 		rl.EndTextureMode()
 
@@ -69,8 +70,8 @@ main :: proc() {
 		dest := rl.Rectangle{dst_x, dst_y, dst_w, dst_h}
 
 		rl.BeginDrawing()
-		rl.ClearBackground(THEME_CANVAS)
-		rl.DrawTexturePro(render_target.texture, source, dest, rl.Vector2{0, 0}, 0, THEME_TEXT)
+		rl.ClearBackground(ctx.theme.canvas)
+		rl.DrawTexturePro(render_target.texture, source, dest, rl.Vector2{0, 0}, 0, ctx.theme.text)
 		rl.EndDrawing()
 	}
 }

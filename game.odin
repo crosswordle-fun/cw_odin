@@ -110,6 +110,8 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 		wordle = wordle_state_new(),
 		show_frags = true,
 		view = .Menu,
+		theme = THEMES[0],
+		theme_index = 0,
 		menu_selection = 0,
 		screen_width = virtual_width,
 		screen_height = virtual_height,
@@ -168,6 +170,11 @@ selector_buffer_clear :: proc(selector_buffer: ^SelectorBuffer) {
 
 game_toggle_frag_rune_view :: proc(state: ^GameState) {
 	state.show_frags = !state.show_frags
+}
+
+game_cycle_theme :: proc(state: ^GameState) {
+	state.theme_index = (state.theme_index + 1) % THEME_COUNT
+	state.theme = THEMES[state.theme_index]
 }
 
 game_set_view :: proc(state: ^GameState, view: GameView) {

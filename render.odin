@@ -34,6 +34,7 @@ RenderContext :: struct {
 	screen_width:  i32,
 	screen_height: i32,
 	scale:         f32,
+	theme:         Theme,
 }
 
 render_buffer_new :: proc() -> RenderBuffer {
@@ -58,11 +59,12 @@ render_frame_destroy :: proc(frame: ^RenderFrame) {
 	render_buffer_destroy(&frame.overlay)
 }
 
-render_context_new :: proc(screen_width: i32, screen_height: i32) -> RenderContext {
+render_context_new :: proc(screen_width: i32, screen_height: i32, theme: Theme) -> RenderContext {
 	return RenderContext {
 		screen_width = screen_width,
 		screen_height = screen_height,
 		scale = screen_scale(screen_width, screen_height),
+		theme = theme,
 	}
 }
 
@@ -157,6 +159,7 @@ push_letter_tile :: proc(
 	y: i32,
 	size: i32,
 	letter: rune,
+	theme: Theme,
 	color: rl.Color,
 	font_size: i32,
 ) {
@@ -181,7 +184,7 @@ push_letter_tile :: proc(
 				text = label,
 				rect = rl.Rectangle{f32(text_x), f32(text_y), 0, 0},
 				font_size = font_size,
-					color = THEME_TEXT,
+				color = theme.text,
 			},
 		)
 	}

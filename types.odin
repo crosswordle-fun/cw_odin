@@ -177,6 +177,8 @@ GameState :: struct {
 	show_frags:       bool,
 	view:             GameView,
 	crafting:         CraftingState,
+	theme:            Theme,
+	theme_index:      i32,
 	menu_selection:   i32,
 	should_quit:      bool,
 	screen_width:     i32,
