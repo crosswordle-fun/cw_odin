@@ -6,7 +6,7 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
 	gap := scaled_i32(BASE_GAP, ctx.scale)
 	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, ctx.scale)
-	row_step := cell_size + gap
+	row_step := tile_row_step(cell_size, gap)
 	visible_rows := wordle_visible_row_count(ctx.screen_height, start_y, row_step)
 
 	if rl.IsKeyPressed(rl.KeyboardKey.LEFT) {

@@ -12,6 +12,10 @@ grid_tile_base_height :: proc(cell_size: i32) -> i32 {
 	return base_height
 }
 
+tile_row_step :: proc(cell_size: i32, gap: i32) -> i32 {
+	return cell_size + gap + grid_tile_base_height(cell_size)
+}
+
 screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
 	scale_x := f32(screen_width) / f32(VIRTUAL_SCREEN_WIDTH)
 	scale_y := f32(screen_height) / f32(VIRTUAL_SCREEN_HEIGHT)

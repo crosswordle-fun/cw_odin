@@ -50,7 +50,13 @@ build_tile :: proc(
 	color: rl.Color,
 	font_size: i32,
 ) {
-	push_letter_tile(buffer, x, y, size, letter, color, font_size)
+	base_color := rl.Color{
+		u8(f32(color[0]) * 0.72),
+		u8(f32(color[1]) * 0.72),
+		u8(f32(color[2]) * 0.72),
+		color[3],
+	}
+	build_layered_tile(buffer, x, y - grid_tile_base_height(size), size, letter, color, base_color, font_size, rl.WHITE)
 }
 
 TitleTile :: struct {
@@ -384,7 +390,7 @@ build_wordle_play_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordl
 	gap := scaled_i32(BASE_GAP, ctx.scale)
 	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
 	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, ctx.scale)
-	row_step := cell_size + gap
+	row_step := tile_row_step(cell_size, gap)
 	visible_rows := wordle_visible_row_count(ctx.screen_height, start_y, row_step)
 	board_width := WORDLE_WORD_LEN * cell_size + (WORDLE_WORD_LEN - 1) * gap
 	start_x := (ctx.screen_width - board_width) / 2
@@ -415,7 +421,7 @@ build_wordle_history_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wo
 	gap := scaled_i32(BASE_GAP, ctx.scale)
 	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
 	start_y := scaled_i32(BASE_WORDLE_BOARD_Y, ctx.scale)
-	row_step := cell_size + gap
+	row_step := tile_row_step(cell_size, gap)
 	visible_rows := wordle_visible_row_count(ctx.screen_height, start_y, row_step)
 	board_width := WORDLE_WORD_LEN * cell_size + (WORDLE_WORD_LEN - 1) * gap
 	start_x := (ctx.screen_width - board_width) / 2
