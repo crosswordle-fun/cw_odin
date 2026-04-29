@@ -440,4 +440,3 @@ flush_render_frame :: proc(frame: RenderFrame) {
 	flush_render_buffer(frame.ui)
 	flush_render_buffer(frame.overlay)
 }
-

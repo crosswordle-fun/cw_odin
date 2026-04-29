@@ -115,13 +115,24 @@ build_tile_with_face_lift :: proc(
 	theme: Theme,
 	face_lift: i32,
 ) {
-	base_color := rl.Color{
+	base_color := rl.Color {
 		u8(f32(color[0]) * 0.72),
 		u8(f32(color[1]) * 0.72),
 		u8(f32(color[2]) * 0.72),
 		color[3],
 	}
-	build_layered_tile_with_face_lift(buffer, x, y - grid_tile_base_height(size), size, letter, color, base_color, font_size, theme.text, face_lift)
+	build_layered_tile_with_face_lift(
+		buffer,
+		x,
+		y - grid_tile_base_height(size),
+		size,
+		letter,
+		color,
+		base_color,
+		font_size,
+		theme.text,
+		face_lift,
+	)
 }
 
 tile_click_lift :: proc(time: f32, lift: i32, phase: i32 = 0) -> i32 {
@@ -160,13 +171,23 @@ build_tile_scaled :: proc(
 	if draw_size < 1 do draw_size = 1
 	draw_x := x + (size - draw_size) / 2
 	draw_y := y + (size - draw_size) / 2
-	base_color := rl.Color{
+	base_color := rl.Color {
 		u8(f32(color[0]) * 0.72),
 		u8(f32(color[1]) * 0.72),
 		u8(f32(color[2]) * 0.72),
 		color[3],
 	}
-	build_layered_tile(buffer, draw_x, draw_y - grid_tile_base_height(draw_size), draw_size, letter, color, base_color, font_size, theme.text)
+	build_layered_tile(
+		buffer,
+		draw_x,
+		draw_y - grid_tile_base_height(draw_size),
+		draw_size,
+		letter,
+		color,
+		base_color,
+		font_size,
+		theme.text,
+	)
 }
 
 build_tile_or_square :: proc(
@@ -248,7 +269,18 @@ build_layered_tile :: proc(
 	font_size: i32,
 	text_color: rl.Color,
 ) {
-	build_layered_tile_with_face_lift(buffer, x, y, size, letter, face_color, base_color, font_size, text_color, 0)
+	build_layered_tile_with_face_lift(
+		buffer,
+		x,
+		y,
+		size,
+		letter,
+		face_color,
+		base_color,
+		font_size,
+		text_color,
+		0,
+	)
 }
 
 build_layered_tile_with_face_lift :: proc(
@@ -347,43 +379,43 @@ build_mode_tabs :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameVie
 
 	title_h := font_size + padding_y * 2
 	cross_x := start_x
-		build_button(
-			buffer,
-			cross_label,
-			cross_x,
-			y - padding_y,
-			title_width,
-			title_h,
-			font_size,
-			view == .Cross,
-			ctx.theme,
-		)
+	build_button(
+		buffer,
+		cross_label,
+		cross_x,
+		y - padding_y,
+		title_width,
+		title_h,
+		font_size,
+		view == .Cross,
+		ctx.theme,
+	)
 
 	wordle_x := cross_x + title_width + title_gap
-		build_button(
-			buffer,
-			wordle_label,
-			wordle_x,
-			y - padding_y,
-			title_width,
-			title_h,
-			font_size,
-			view == .Wordle,
-			ctx.theme,
-		)
+	build_button(
+		buffer,
+		wordle_label,
+		wordle_x,
+		y - padding_y,
+		title_width,
+		title_h,
+		font_size,
+		view == .Wordle,
+		ctx.theme,
+	)
 
 	crafting_x := wordle_x + title_width + title_gap
-		build_button(
-			buffer,
-			crafting_label,
-			crafting_x,
-			y - padding_y,
-			title_width,
-			title_h,
-			font_size,
-			view == .Crafting,
-			ctx.theme,
-		)
+	build_button(
+		buffer,
+		crafting_label,
+		crafting_x,
+		y - padding_y,
+		title_width,
+		title_h,
+		font_size,
+		view == .Crafting,
+		ctx.theme,
+	)
 }
 
 build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: UiState) {
@@ -396,16 +428,29 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: U
 	badge_h := scaled_i32(38, ctx.scale) + i32(pulse * 3)
 	push_rect(buffer, x, y, badge_w, badge_h, with_alpha(ctx.theme.surface, 236))
 	push_rect_lines(buffer, x, y, badge_w, badge_h, 2, rl.BLACK)
-	push_circle(buffer, f32(x + scaled_i32(20, ctx.scale)), f32(y + badge_h / 2), f32(scaled_i32(9, ctx.scale)), with_alpha(ctx.theme.exp, 220))
+	push_circle(
+		buffer,
+		f32(x + scaled_i32(20, ctx.scale)),
+		f32(y + badge_h / 2),
+		f32(scaled_i32(9, ctx.scale)),
+		with_alpha(ctx.theme.exp, 220),
+	)
 	label := fmt.caprintf("EXP %d", exp)
-	build_text(buffer, label, x + scaled_i32(36, ctx.scale), y + (badge_h - font_size) / 2, font_size, ctx.theme.exp)
+	build_text(
+		buffer,
+		label,
+		x + scaled_i32(36, ctx.scale),
+		y + (badge_h - font_size) / 2,
+		font_size,
+		ctx.theme.exp,
+	)
 }
 
 build_wordle_level :: proc(buffer: ^RenderBuffer, ctx: RenderContext, level: u32) {
 	font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
 	y := scaled_i32(BASE_WORDLE_LEVEL_Y, ctx.scale)
 	label := fmt.caprintf("LEVEL %d", level + 1)
-		build_centered_text(buffer, label, ctx.screen_width, y, font_size, ctx.theme.text)
+	build_centered_text(buffer, label, ctx.screen_width, y, font_size, ctx.theme.text)
 }
 
 build_inventory_counts :: proc(
@@ -526,7 +571,7 @@ build_crossword_selector_overlay :: proc(
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
 	x, y := grid_tile_position(grid, selector.row, selector.col)
 	preview_face := line_color
-	preview_base := rl.Color{
+	preview_base := rl.Color {
 		u8(f32(line_color[0]) * 0.72),
 		u8(f32(line_color[1]) * 0.72),
 		u8(f32(line_color[2]) * 0.72),
@@ -628,14 +673,39 @@ build_wordle_current_row :: proc(
 		tile_x := x + i32(col) * (cell_size + gap) + shake
 		if current_guess[col] != 0 {
 			lift := tile_click_lift(ctx.time, grid_tile_base_height(cell_size))
-			build_tile_with_face_lift(buffer, tile_x, y, cell_size, current_guess[col], theme.wordle_empty, font_size, theme, lift)
+			build_tile_with_face_lift(
+				buffer,
+				tile_x,
+				y,
+				cell_size,
+				current_guess[col],
+				theme.wordle_empty,
+				font_size,
+				theme,
+				lift,
+			)
 		} else {
-			build_tile_or_square(buffer, tile_x, y, cell_size, current_guess[col], theme.wordle_empty, theme.wordle_empty, font_size, theme)
+			build_tile_or_square(
+				buffer,
+				tile_x,
+				y,
+				cell_size,
+				current_guess[col],
+				theme.wordle_empty,
+				theme.wordle_empty,
+				font_size,
+				theme,
+			)
 		}
 	}
 }
 
-build_wordle_play_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle: WordleState, ui: UiState) {
+build_wordle_play_board :: proc(
+	buffer: ^RenderBuffer,
+	ctx: RenderContext,
+	wordle: WordleState,
+	ui: UiState,
+) {
 	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
 	gap := scaled_i32(BASE_GAP, ctx.scale)
 	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
@@ -655,18 +725,45 @@ build_wordle_play_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordl
 	draw_rows: i32 = 0
 	for guess_index in scroll_row ..< min(i32(len(wordle.guesses)), scroll_row + visible_rows) {
 		y := start_y + draw_rows * row_step
-		build_wordle_guess_row(buffer, start_x, y, cell_size, gap, font_size, wordle.guesses[guess_index], ctx.theme, ui, guess_index)
+		build_wordle_guess_row(
+			buffer,
+			start_x,
+			y,
+			cell_size,
+			gap,
+			font_size,
+			wordle.guesses[guess_index],
+			ctx.theme,
+			ui,
+			guess_index,
+		)
 		draw_rows += 1
 	}
 
 	if i32(len(wordle.guesses)) >= scroll_row &&
 	   i32(len(wordle.guesses)) < scroll_row + visible_rows {
 		y := start_y + draw_rows * row_step
-		build_wordle_current_row(buffer, start_x, y, cell_size, gap, font_size, wordle.current_guess, ctx.theme, ctx, ui)
+		build_wordle_current_row(
+			buffer,
+			start_x,
+			y,
+			cell_size,
+			gap,
+			font_size,
+			wordle.current_guess,
+			ctx.theme,
+			ctx,
+			ui,
+		)
 	}
 }
 
-build_wordle_history_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle: WordleState, ui: UiState) {
+build_wordle_history_board :: proc(
+	buffer: ^RenderBuffer,
+	ctx: RenderContext,
+	wordle: WordleState,
+	ui: UiState,
+) {
 	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
 	gap := scaled_i32(BASE_GAP, ctx.scale)
 	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
@@ -689,7 +786,18 @@ build_wordle_history_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wo
 	draw_rows: i32 = 0
 	for guess_index in scroll_row ..< min(total_rows, scroll_row + visible_rows) {
 		y := start_y + draw_rows * row_step
-		build_wordle_guess_row(buffer, start_x, y, cell_size, gap, font_size, record.guesses[guess_index], ctx.theme, ui, -10)
+		build_wordle_guess_row(
+			buffer,
+			start_x,
+			y,
+			cell_size,
+			gap,
+			font_size,
+			record.guesses[guess_index],
+			ctx.theme,
+			ui,
+			-10,
+		)
 		draw_rows += 1
 	}
 
@@ -703,7 +811,14 @@ build_wordle_history_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wo
 		margin +
 		(history_reward_size - scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)) / 2
 	exp_label := fmt.caprintf("+%d EXP", record.reward_exp)
-		build_text(buffer, exp_label, exp_x, exp_y, scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale), ctx.theme.exp)
+	build_text(
+		buffer,
+		exp_label,
+		exp_x,
+		exp_y,
+		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
+		ctx.theme.exp,
+	)
 	build_tile(
 		buffer,
 		ctx.screen_width - history_reward_size - margin,
@@ -716,7 +831,12 @@ build_wordle_history_board :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wo
 	)
 }
 
-build_wordle_won_panel :: proc(buffer: ^RenderBuffer, ctx: RenderContext, wordle: WordleState, ui: UiState) {
+build_wordle_won_panel :: proc(
+	buffer: ^RenderBuffer,
+	ctx: RenderContext,
+	wordle: WordleState,
+	ui: UiState,
+) {
 	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
 	gap := scaled_i32(BASE_GAP, ctx.scale)
 	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, ctx.scale)
@@ -874,9 +994,29 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		if i32(i) >= state.crafting.count do color = ctx.theme.empty_tile
 		if letter != 0 {
 			lift := tile_click_lift(ctx.time, grid_tile_base_height(cell_size), i32(i))
-			build_tile_with_face_lift(&frame.world, tile_x, selected_y, cell_size, letter, color, font_size, ctx.theme, lift)
+			build_tile_with_face_lift(
+				&frame.world,
+				tile_x,
+				selected_y,
+				cell_size,
+				letter,
+				color,
+				font_size,
+				ctx.theme,
+				lift,
+			)
 		} else {
-			build_tile_or_square(&frame.world, tile_x, selected_y, cell_size, letter, color, ctx.theme.empty_tile, font_size, ctx.theme)
+			build_tile_or_square(
+				&frame.world,
+				tile_x,
+				selected_y,
+				cell_size,
+				letter,
+				color,
+				ctx.theme.empty_tile,
+				font_size,
+				ctx.theme,
+			)
 		}
 	}
 
@@ -899,12 +1039,33 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 	)
 	rune_scale := f32(1)
 	if state.crafting.crafted_rune != 0 && state.ui.crafted_rune_age < 0.8 {
-		rune_scale = 0.78 + 0.22 * rl.EaseBackOut(saturate(state.ui.crafted_rune_age / 0.32), 0, 1, 1)
+		rune_scale =
+			0.78 + 0.22 * rl.EaseBackOut(saturate(state.ui.crafted_rune_age / 0.32), 0, 1, 1)
 	}
 	if state.crafting.crafted_rune != 0 {
-		build_tile_scaled(&frame.world, (ctx.screen_width - cell_size) / 2, output_y, cell_size, state.crafting.crafted_rune, ctx.theme.highlight_rune, font_size, ctx.theme, rune_scale)
+		build_tile_scaled(
+			&frame.world,
+			(ctx.screen_width - cell_size) / 2,
+			output_y,
+			cell_size,
+			state.crafting.crafted_rune,
+			ctx.theme.highlight_rune,
+			font_size,
+			ctx.theme,
+			rune_scale,
+		)
 	} else {
-		build_tile_or_square(&frame.world, (ctx.screen_width - cell_size) / 2, output_y, cell_size, state.crafting.crafted_rune, ctx.theme.highlight_rune, ctx.theme.empty_tile, font_size, ctx.theme)
+		build_tile_or_square(
+			&frame.world,
+			(ctx.screen_width - cell_size) / 2,
+			output_y,
+			cell_size,
+			state.crafting.crafted_rune,
+			ctx.theme.highlight_rune,
+			ctx.theme.empty_tile,
+			font_size,
+			ctx.theme,
+		)
 	}
 	if state.crafting.crafted_rune != 0 {
 		reward_detail := fmt.caprintf("+%d EXP", RUNE_CRAFT_EXP_REWARD)
@@ -931,7 +1092,14 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	build_mode_tabs(&frame.ui, ctx, state.view)
 	build_exp_hud(&frame.ui, ctx, state.exp, state.ui)
-	build_crossword_grid(&frame.world, state.grid, state.selector, state.selector_buffer, ctx.theme, state.ui)
+	build_crossword_grid(
+		&frame.world,
+		state.grid,
+		state.selector,
+		state.selector_buffer,
+		ctx.theme,
+		state.ui,
+	)
 	build_crossword_selector_overlay(
 		&frame.overlay,
 		state.grid,

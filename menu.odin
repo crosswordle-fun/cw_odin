@@ -195,4 +195,3 @@ menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSta
 		state.ui,
 	)
 }
-

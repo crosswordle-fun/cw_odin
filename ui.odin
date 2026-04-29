@@ -35,11 +35,7 @@ lerp_color :: proc(a: rl.Color, b: rl.Color, t: f32) -> rl.Color {
 }
 
 ui_state_new :: proc(view: GameView, exp: u32) -> UiState {
-	return UiState {
-		previous_view = view,
-		wordle_reveal_guess_row = -1,
-		last_exp = exp,
-	}
+	return UiState{previous_view = view, wordle_reveal_guess_row = -1, last_exp = exp}
 }
 
 ui_update :: proc(state: ^GameState, dt: f32) {
@@ -114,12 +110,12 @@ ui_spawn_floating_exp :: proc(ui: ^UiState, amount: u32, x: f32, y: f32, color: 
 	for i in 0 ..< len(ui.floating_text) {
 		if ui.floating_text[i].active do continue
 		ui.floating_text[i] = UiFloatingText {
-			active = true,
-			amount = amount,
-			x = x,
-			y = y,
+			active   = true,
+			amount   = amount,
+			x        = x,
+			y        = y,
 			lifetime = 1.2,
-			color = color,
+			color    = color,
 		}
 		return
 	}
@@ -141,17 +137,17 @@ ui_spawn_burst :: proc(ui: ^UiState, x: f32, y: f32, color: rl.Color, count: i32
 		life := f32(rl.GetRandomValue(45, 95)) / 100.0
 		size := f32(rl.GetRandomValue(3, 8))
 		ui.particles[slot] = UiParticle {
-			active = true,
-			kind = .Sparkle,
-			x = x,
-			y = y,
-			vx = math.cos(angle) * speed,
-			vy = math.sin(angle) * speed - 38,
+			active   = true,
+			kind     = .Sparkle,
+			x        = x,
+			y        = y,
+			vx       = math.cos(angle) * speed,
+			vy       = math.sin(angle) * speed - 38,
 			lifetime = life,
-			size = size,
+			size     = size,
 			rotation = f32(rl.GetRandomValue(0, 360)),
-			spin = f32(rl.GetRandomValue(-220, 220)),
-			color = color,
+			spin     = f32(rl.GetRandomValue(-220, 220)),
+			color    = color,
 		}
 	}
 }
@@ -172,7 +168,10 @@ ui_note_tile_pop :: proc(ui: ^UiState, key: i32) {
 		if !ui.tile_pops[i].active && free_slot < 0 do free_slot = i
 	}
 	if free_slot >= 0 {
-		ui.tile_pops[free_slot] = UiTilePop{active = true, key = key}
+		ui.tile_pops[free_slot] = UiTilePop {
+			active = true,
+			key    = key,
+		}
 	}
 }
 
@@ -226,7 +225,14 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 		alpha := u8(255 * (1 - t))
 		label := fmt.caprintf("+%d EXP", text.amount)
 		font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
-		push_text(buffer, label, i32(text.x) - measure_text_width(label, font_size) / 2, i32(y), font_size, with_alpha(text.color, alpha))
+		push_text(
+			buffer,
+			label,
+			i32(text.x) - measure_text_width(label, font_size) / 2,
+			i32(y),
+			font_size,
+			with_alpha(text.color, alpha),
+		)
 	}
 }
 
@@ -234,5 +240,12 @@ draw_view_transition :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiSt
 	age := ui.time - ui.view_enter_time
 	if age >= 0.28 do return
 	alpha := u8(120 * (1 - ease_out(age / 0.28)))
-	push_rect(buffer, 0, 0, ctx.screen_width, ctx.screen_height, with_alpha(ctx.theme.background, alpha))
+	push_rect(
+		buffer,
+		0,
+		0,
+		ctx.screen_width,
+		ctx.screen_height,
+		with_alpha(ctx.theme.background, alpha),
+	)
 }

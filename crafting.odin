@@ -55,8 +55,20 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 				state.exp += RUNE_CRAFT_EXP_REWARD
 				state.crafting.crafted_rune = letter
 				ui_note_crafted_rune(&state.ui)
-				ui_note_exp_reward(&state.ui, RUNE_CRAFT_EXP_REWARD, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.exp)
-				ui_spawn_burst(&state.ui, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.highlight_rune, 22)
+				ui_note_exp_reward(
+					&state.ui,
+					RUNE_CRAFT_EXP_REWARD,
+					f32(state.screen_width / 2),
+					f32(scaled_i32(410, ctx.scale)),
+					state.theme.exp,
+				)
+				ui_spawn_burst(
+					&state.ui,
+					f32(state.screen_width / 2),
+					f32(scaled_i32(410, ctx.scale)),
+					state.theme.highlight_rune,
+					22,
+				)
 				crafting_clear_selection(&state.crafting)
 				did_craft = true
 			}
@@ -79,8 +91,20 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 				state.exp += RUNE_CRAFT_EXP_REWARD
 				state.crafting.crafted_rune = FRAG_LETTERS[crafted_index]
 				ui_note_crafted_rune(&state.ui)
-				ui_note_exp_reward(&state.ui, RUNE_CRAFT_EXP_REWARD, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.exp)
-				ui_spawn_burst(&state.ui, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.highlight_rune, 22)
+				ui_note_exp_reward(
+					&state.ui,
+					RUNE_CRAFT_EXP_REWARD,
+					f32(state.screen_width / 2),
+					f32(scaled_i32(410, ctx.scale)),
+					state.theme.exp,
+				)
+				ui_spawn_burst(
+					&state.ui,
+					f32(state.screen_width / 2),
+					f32(scaled_i32(410, ctx.scale)),
+					state.theme.highlight_rune,
+					22,
+				)
 				crafting_clear_selection(&state.crafting)
 				did_craft = true
 			}

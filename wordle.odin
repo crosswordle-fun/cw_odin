@@ -137,7 +137,13 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 						f32(scaled_i32(360, ctx.scale)),
 						state.theme.exp,
 					)
-					ui_spawn_burst(&state.ui, f32(state.screen_width / 2), f32(scaled_i32(360, ctx.scale)), state.theme.wordle_correct, 24)
+					ui_spawn_burst(
+						&state.ui,
+						f32(state.screen_width / 2),
+						f32(scaled_i32(360, ctx.scale)),
+						state.theme.wordle_correct,
+						24,
+					)
 					state.wordle.substate = .Won
 				}
 				total_rows := i32(len(state.wordle.guesses))

@@ -177,28 +177,28 @@ UiParticleKind :: enum {
 }
 
 UiParticle :: struct {
-	active:    bool,
-	kind:      UiParticleKind,
-	x:         f32,
-	y:         f32,
-	vx:        f32,
-	vy:        f32,
-	age:       f32,
-	lifetime:  f32,
-	size:      f32,
-	rotation:  f32,
-	spin:      f32,
-	color:     rl.Color,
+	active:   bool,
+	kind:     UiParticleKind,
+	x:        f32,
+	y:        f32,
+	vx:       f32,
+	vy:       f32,
+	age:      f32,
+	lifetime: f32,
+	size:     f32,
+	rotation: f32,
+	spin:     f32,
+	color:    rl.Color,
 }
 
 UiFloatingText :: struct {
-	active:    bool,
-	amount:    u32,
-	x:         f32,
-	y:         f32,
-	age:       f32,
-	lifetime:  f32,
-	color:     rl.Color,
+	active:   bool,
+	amount:   u32,
+	x:        f32,
+	y:        f32,
+	age:      f32,
+	lifetime: f32,
+	color:    rl.Color,
 }
 
 UiTilePop :: struct {
