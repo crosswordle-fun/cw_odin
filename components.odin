@@ -86,6 +86,7 @@ build_tile_with_face_lift :: proc(
 		base_color,
 		font_size,
 		theme.text,
+		theme.outline,
 		face_lift,
 	)
 }
@@ -142,6 +143,7 @@ build_tile_scaled :: proc(
 		base_color,
 		font_size,
 		theme.text,
+		theme.outline,
 	)
 }
 
@@ -162,7 +164,7 @@ build_tile_or_square :: proc(
 	}
 
 	push_rect(buffer, x, y, size, size, empty_color)
-	push_rect_lines(buffer, x, y, size, size, 2, rl.BLACK)
+	push_rect_lines(buffer, x, y, size, size, 2, theme.outline)
 }
 
 TitleTile :: struct {
@@ -175,6 +177,7 @@ TitleTile :: struct {
 	base_color: rl.Color,
 	font_size:  i32,
 	text_color: rl.Color,
+	outline:    rl.Color,
 }
 
 build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
@@ -193,7 +196,8 @@ build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
 		tile.base_color,
 	)
 	push_rect(buffer, tile.x, face_y, tile.face_size, tile.face_size, tile.face_color)
-	push_rect_lines(buffer, tile.x, face_y, tile.face_size, tile.face_size, 2, rl.BLACK)
+	outline_height := tile.y + tile.face_size + base_height - face_y
+	push_rect_lines(buffer, tile.x, face_y, tile.face_size, outline_height, 2, tile.outline)
 
 	if tile.letter != 0 {
 		label := fmt.caprintf("%c", tile.letter)
@@ -214,6 +218,7 @@ build_layered_tile :: proc(
 	base_color: rl.Color,
 	font_size: i32,
 	text_color: rl.Color,
+	outline: rl.Color,
 ) {
 	build_layered_tile_with_face_lift(
 		buffer,
@@ -225,6 +230,7 @@ build_layered_tile :: proc(
 		base_color,
 		font_size,
 		text_color,
+		outline,
 		0,
 	)
 }
@@ -239,6 +245,7 @@ build_layered_tile_with_face_lift :: proc(
 	base_color: rl.Color,
 	font_size: i32,
 	text_color: rl.Color,
+	outline: rl.Color,
 	face_lift: i32,
 ) {
 	build_title_tile(
@@ -253,6 +260,7 @@ build_layered_tile_with_face_lift :: proc(
 			base_color = base_color,
 			font_size = font_size,
 			text_color = text_color,
+			outline = outline,
 		},
 	)
 }
@@ -278,7 +286,9 @@ build_button :: proc(
 		fill = theme.button_fill
 	}
 	push_rect(buffer, x, y - lift, width, height, fill)
-	push_rect_lines(buffer, x, y - lift, width, height, 2, rl.BLACK)
+	outline_y := y - lift
+	outline_height := shadow_y + height - outline_y
+	push_rect_lines(buffer, x, outline_y, width, outline_height, 2, theme.outline)
 
 	text_color := theme.button_text
 	if active do text_color = theme.button_text_inverted
@@ -373,7 +383,7 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: U
 	badge_w := scaled_i32(132, ctx.scale) + i32(pulse * 5)
 	badge_h := scaled_i32(38, ctx.scale) + i32(pulse * 3)
 	push_rect(buffer, x, y, badge_w, badge_h, with_alpha(ctx.theme.surface, 236))
-	push_rect_lines(buffer, x, y, badge_w, badge_h, 2, rl.BLACK)
+	push_rect_lines(buffer, x, y, badge_w, badge_h, 2, ctx.theme.outline)
 	push_circle(
 		buffer,
 		f32(x + scaled_i32(20, ctx.scale)),
@@ -450,6 +460,7 @@ build_inventory_count_tile :: proc(
 			base_color = base_color,
 			font_size = letter_font_size,
 			text_color = text_color,
+			outline = theme.outline,
 		},
 	)
 
@@ -500,7 +511,7 @@ build_inventory_counts :: proc(
 		hud_width + panel_pad_x * 2,
 		hud_height + panel_pad_y * 2,
 		2,
-		rl.BLACK,
+		ctx.theme.outline,
 	)
 
 	for i in 0 ..< LETTER_COUNT {
@@ -589,7 +600,7 @@ build_crossword_grid :: proc(
 		} else {
 			if covered_by_selector do continue
 			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, theme.empty_tile)
-			push_rect_lines(buffer, x, y, grid.cell_size, grid.cell_size, 2, rl.BLACK)
+			push_rect_lines(buffer, x, y, grid.cell_size, grid.cell_size, 2, theme.outline)
 		}
 	}
 }
@@ -628,6 +639,7 @@ build_crossword_selector_overlay :: proc(
 		preview_base,
 		font_size,
 		theme.text,
+		theme.outline,
 	)
 
 	for i in 0 ..< selector_buffer.count {
@@ -644,6 +656,7 @@ build_crossword_selector_overlay :: proc(
 			preview_base,
 			font_size,
 			theme.text,
+			theme.outline,
 		)
 	}
 }

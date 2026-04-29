@@ -136,6 +136,7 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme
 				base_color = base_color,
 				font_size = layout.title_font_size,
 				text_color = theme.text,
+				outline = theme.outline,
 			},
 		)
 		x += layout.title_face_size + layout.title_gap
