@@ -43,52 +43,7 @@ build_centered_text_in_rect :: proc(
 }
 
 build_cozy_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
-	push_rect_gradient_v(
-		buffer,
-		0,
-		0,
-		ctx.screen_width,
-		ctx.screen_height,
-		rl.Color{253, 244, 224, 255},
-		rl.Color{232, 211, 176, 255},
-	)
-
-	for i in 0 ..< 14 {
-		seed := i32(i)
-		base_x := f32((seed * 109 + 37) % ctx.screen_width)
-		base_y := f32((seed * 71 + 53) % ctx.screen_height)
-		drift_x := math.sin(ctx.time * 0.7 + f32(i) * 0.9) * 10
-		drift_y := math.sin(ctx.time * 0.5 + f32(i) * 1.2) * 8
-		radius := f32(scaled_i32(i32(14 + i % 6 * 5), ctx.scale))
-		color := rl.Color{255, 250, 236, u8(34 + i % 5 * 8)}
-		push_circle(buffer, base_x + drift_x, base_y + drift_y, radius, color)
-	}
-
-	push_circle_gradient(
-		buffer,
-		f32(ctx.screen_width) * 0.16,
-		f32(ctx.screen_height) * 0.18,
-		f32(scaled_i32(170, ctx.scale)),
-		rl.Color{255, 248, 219, 64},
-		rl.Color{255, 248, 219, 0},
-	)
-	push_circle_gradient(
-		buffer,
-		f32(ctx.screen_width) * 0.86,
-		f32(ctx.screen_height) * 0.82,
-		f32(scaled_i32(210, ctx.scale)),
-		rl.Color{167, 114, 118, 34},
-		rl.Color{167, 114, 118, 0},
-	)
-	push_rect_lines(
-		buffer,
-		scaled_i32(12, ctx.scale),
-		scaled_i32(12, ctx.scale),
-		ctx.screen_width - scaled_i32(24, ctx.scale),
-		ctx.screen_height - scaled_i32(24, ctx.scale),
-		f32(scaled_i32(2, ctx.scale)),
-		rl.Color{128, 96, 67, 42},
-	)
+	push_rect(buffer, 0, 0, ctx.screen_width, ctx.screen_height, ctx.theme.background)
 }
 
 build_tile :: proc(
