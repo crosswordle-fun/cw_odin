@@ -250,14 +250,25 @@ build_inventory_counts :: proc(
 build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid) {
 	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
 	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, scale)
-	rune_padding := scaled_i32(BASE_RUNE_PADDING, scale)
 
 	for i in 0 ..< len(grid.tiles) {
 		tile := grid.tiles[i]
 		x, y := grid_tile_position(grid, tile.row, tile.col)
 		base_height := grid_tile_base_height(grid.cell_size)
 
-		if grid.frags[i] != 0 {
+		if grid.runes[i] != 0 {
+			build_layered_tile(
+				buffer,
+				x,
+				y - base_height,
+				grid.cell_size,
+				grid.runes[i],
+				rl.PURPLE,
+				rl.DARKPURPLE,
+				font_size,
+				rl.WHITE,
+			)
+		} else if grid.frags[i] != 0 {
 			build_layered_tile(
 				buffer,
 				x,
@@ -271,21 +282,6 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid) {
 			)
 		} else {
 			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, rl.DARKGRAY)
-		}
-
-		if grid.runes[i] != 0 {
-			rune_size := grid.cell_size - rune_padding * 2
-			build_layered_tile(
-				buffer,
-				x + rune_padding,
-				y + rune_padding - base_height,
-				rune_size,
-				grid.runes[i],
-				rl.PURPLE,
-				rl.DARKPURPLE,
-				font_size,
-				rl.WHITE,
-			)
 		}
 	}
 }
