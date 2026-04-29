@@ -10,23 +10,6 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 	if rl.IsKeyPressed(rl.KeyboardKey.LEFT) do selector_move(&state.selector, 0, -1, state.grid)
 	if rl.IsKeyPressed(rl.KeyboardKey.RIGHT) do selector_move(&state.selector, 0, 1, state.grid)
 
-	if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
-		mouse_pos, ok := virtual_mouse_position()
-		if ok {
-			grid_right := state.grid.offset_x + grid_pixel_width(state.grid)
-			grid_bottom := state.grid.offset_y + grid_pixel_height(state.grid)
-			if mouse_pos.x >= f32(state.grid.offset_x) &&
-			   mouse_pos.y >= f32(state.grid.offset_y) &&
-			   mouse_pos.x < f32(grid_right) &&
-			   mouse_pos.y < f32(grid_bottom) {
-				step := f32(grid_row_step(state.grid))
-				col := i32((mouse_pos.x - f32(state.grid.offset_x)) / step)
-				row := i32((mouse_pos.y - f32(state.grid.offset_y)) / step)
-				selector_set_tile(&state.selector, row, col)
-			}
-		}
-	}
-
 	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) do selector_toggle_direction(&state.selector)
 
 	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {

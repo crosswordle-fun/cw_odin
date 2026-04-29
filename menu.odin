@@ -68,13 +68,6 @@ menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
 	}
 }
 
-menu_point_in_rect :: proc(point: rl.Vector2, x: i32, y: i32, width: i32, height: i32) -> bool {
-	return point.x >= f32(x) &&
-		point.y >= f32(y) &&
-		point.x < f32(x + width) &&
-		point.y < f32(y + height)
-}
-
 menu_selection_from_state :: proc(selection: i32) -> MenuSelection {
 	if selection == 1 do return .Exit
 	return .Start
@@ -186,31 +179,13 @@ build_menu_mode_view :: proc(
 
 menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	layout := menu_layout(ctx)
-	start_hovered := false
-	exit_hovered := false
 	selection := menu_selection_from_state(state.menu_selection)
-
-	mouse_pos, ok := virtual_mouse_position()
-	if ok {
-		start_hovered = menu_point_in_rect(mouse_pos, layout.button_x, layout.start_y, layout.button_width, layout.button_height)
-		exit_hovered = menu_point_in_rect(mouse_pos, layout.button_x, layout.exit_y, layout.button_width, layout.button_height)
-		if start_hovered do selection = .Start
-		if exit_hovered do selection = .Exit
-	}
 
 	if rl.IsKeyPressed(rl.KeyboardKey.UP) || rl.IsKeyPressed(rl.KeyboardKey.DOWN) {
 		if selection == .Start {
 			selection = .Exit
 		} else {
 			selection = .Start
-		}
-	}
-
-	if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
-		if start_hovered {
-			game_set_view(state, .Cross)
-		} else if exit_hovered {
-			state.should_quit = true
 		}
 	}
 
@@ -224,5 +199,7 @@ menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSta
 	}
 
 	state.menu_selection = menu_selection_to_state(selection)
+	start_hovered := selection == .Start
+	exit_hovered := selection == .Exit
 	build_menu_mode_view(frame, ctx, layout, start_hovered, exit_hovered, selection, ctx.theme, state.ui)
 }
