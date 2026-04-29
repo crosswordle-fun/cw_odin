@@ -19,7 +19,7 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 			   mouse_pos.y >= f32(state.grid.offset_y) &&
 			   mouse_pos.x < f32(grid_right) &&
 			   mouse_pos.y < f32(grid_bottom) {
-				step := f32(state.grid.cell_size + state.grid.gap)
+				step := f32(grid_row_step(state.grid))
 				col := i32((mouse_pos.x - f32(state.grid.offset_x)) / step)
 				row := i32((mouse_pos.y - f32(state.grid.offset_y)) / step)
 				selector_set_tile(&state.selector, row, col)

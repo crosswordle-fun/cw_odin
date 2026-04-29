@@ -6,6 +6,12 @@ scaled_i32 :: proc(value: i32, scale: f32) -> i32 {
 	return scaled
 }
 
+grid_tile_base_height :: proc(cell_size: i32) -> i32 {
+	base_height := cell_size / 10
+	if base_height < 1 do base_height = 1
+	return base_height
+}
+
 screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
 	scale_x := f32(screen_width) / f32(VIRTUAL_SCREEN_WIDTH)
 	scale_y := f32(screen_height) / f32(VIRTUAL_SCREEN_HEIGHT)
@@ -18,7 +24,12 @@ grid_pixel_width :: proc(grid: Grid) -> i32 {
 }
 
 grid_pixel_height :: proc(grid: Grid) -> i32 {
-	return grid.rows * grid.cell_size + (grid.rows - 1) * grid.gap
+	base_height := grid_tile_base_height(grid.cell_size)
+	return grid.rows * (grid.cell_size + base_height) + (grid.rows - 1) * grid.gap
+}
+
+grid_row_step :: proc(grid: Grid) -> i32 {
+	return grid.cell_size + grid.gap + grid_tile_base_height(grid.cell_size)
 }
 
 grid_tile_index :: proc(grid: Grid, row: i32, col: i32) -> i32 {
@@ -27,7 +38,7 @@ grid_tile_index :: proc(grid: Grid, row: i32, col: i32) -> i32 {
 
 grid_tile_position :: proc(grid: Grid, row: i32, col: i32) -> (x: i32, y: i32) {
 	x = grid.offset_x + col * (grid.cell_size + grid.gap)
-	y = grid.offset_y + row * (grid.cell_size + grid.gap)
+	y = grid.offset_y + row * grid_row_step(grid)
 	return
 }
 
@@ -51,7 +62,8 @@ selector_letter_position :: proc(
 
 grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
 	grid_width := GRID_COLS * BASE_CELL_SIZE + (GRID_COLS - 1) * BASE_GAP
-	grid_height := GRID_ROWS * BASE_CELL_SIZE + (GRID_ROWS - 1) * BASE_GAP
+	base_height := grid_tile_base_height(BASE_CELL_SIZE)
+	grid_height := GRID_ROWS * (BASE_CELL_SIZE + base_height) + (GRID_ROWS - 1) * BASE_GAP
 
 	grid := Grid {
 		tiles         = make([]Tile, GRID_COLS * GRID_ROWS),

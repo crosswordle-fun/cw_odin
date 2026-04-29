@@ -87,6 +87,32 @@ build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
 	}
 }
 
+build_layered_tile :: proc(
+	buffer: ^RenderBuffer,
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	face_color: rl.Color,
+	base_color: rl.Color,
+	font_size: i32,
+	text_color: rl.Color,
+) {
+	build_title_tile(
+		buffer,
+		TitleTile {
+			x = x,
+			y = y,
+			face_size = size,
+			letter = letter,
+			face_color = face_color,
+			base_color = base_color,
+			font_size = font_size,
+			text_color = text_color,
+		},
+	)
+}
+
 build_button :: proc(
 	buffer: ^RenderBuffer,
 	label: cstring,
@@ -229,16 +255,19 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid) {
 	for i in 0 ..< len(grid.tiles) {
 		tile := grid.tiles[i]
 		x, y := grid_tile_position(grid, tile.row, tile.col)
+		base_height := grid_tile_base_height(grid.cell_size)
 
 		if grid.frags[i] != 0 {
-			build_tile(
+			build_layered_tile(
 				buffer,
 				x,
-				y,
+				y - base_height,
 				grid.cell_size,
 				grid.frags[i],
 				rl.SKYBLUE,
+				rl.DARKBLUE,
 				font_size,
+				rl.WHITE,
 			)
 		} else {
 			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, rl.DARKGRAY)
@@ -246,14 +275,16 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid) {
 
 		if grid.runes[i] != 0 {
 			rune_size := grid.cell_size - rune_padding * 2
-			build_tile(
+			build_layered_tile(
 				buffer,
 				x + rune_padding,
-				y + rune_padding,
+				y + rune_padding - base_height,
 				rune_size,
 				grid.runes[i],
 				rl.PURPLE,
+				rl.DARKPURPLE,
 				font_size,
+				rl.WHITE,
 			)
 		}
 	}
