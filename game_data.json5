@@ -32,8 +32,8 @@
 
   fonts: {
     hud: 20,
-    board: 28,
-    selector: 24,
+    board: 60,
+    selector: 30,
     title: 48,
   },
 
@@ -144,6 +144,7 @@
   },
 
   themes: [
+    // Default
     {
       background: [243, 244, 246, 255],
       canvas: [0, 0, 0, 255],
@@ -167,6 +168,56 @@
       button_shadow: [229, 231, 235, 255],
       button_text: [0, 0, 0, 255],
       button_text_inverted: [255, 255, 255, 255],
+    },
+    // Dark Fantasy
+    {
+      background: [22, 16, 12, 255],
+      canvas: [0, 0, 0, 255],
+      text: [245, 232, 210, 255],
+      text_inverted: [22, 16, 12, 255],
+      text_muted: [174, 154, 129, 255],
+      outline: [88, 58, 44, 255],
+      surface: [43, 30, 24, 255],
+      surface_shadow: [18, 11, 8, 255],
+      empty_tile: [43, 30, 24, 255],
+      highlight_fragment: [216, 134, 55, 255],
+      highlight_fragment_shadow: [133, 70, 20, 255],
+      highlight_rune: [128, 166, 255, 255],
+      highlight_rune_shadow: [53, 93, 180, 255],
+      exp: [250, 211, 96, 255],
+      wordle_correct: [111, 194, 74, 255],
+      wordle_present: [223, 153, 49, 255],
+      wordle_miss: [110, 94, 80, 255],
+      wordle_empty: [43, 30, 24, 255],
+      button_fill: [82, 52, 38, 255],
+      button_shadow: [18, 11, 8, 255],
+      button_text: [245, 232, 210, 255],
+      button_text_inverted: [22, 16, 12, 255],
+    },
+    // Cozy Craft
+    {
+      background: [245, 235, 218, 255],
+      canvas: [0, 0, 0, 255],
+      text: [54, 44, 34, 255],
+      text_inverted: [245, 235, 218, 255],
+      text_muted: [124, 108, 92, 255],
+      outline: [84, 67, 53, 255],
+      surface: [228, 212, 188, 255],
+      surface_shadow: [166, 146, 122, 255],
+      empty_tile: [228, 212, 188, 255],
+      highlight_fragment: [108, 173, 86, 255],
+      highlight_fragment_shadow: [68, 121, 57, 255],
+      highlight_rune: [139, 108, 191, 255],
+      highlight_rune_shadow: [96, 68, 145, 255],
+      exp: [84, 67, 53, 255],
+      wordle_correct: [74, 164, 104, 255],
+      wordle_present: [214, 160, 66, 255],
+      wordle_miss: [159, 141, 121, 255],
+      wordle_empty: [228, 212, 188, 255],
+      button_fill: [122, 92, 66, 255],
+      button_shadow: [166, 146, 122, 255],
+      button_text: [245, 235, 218, 255],
+      button_text_inverted: [54, 44, 34, 255],
     },
   ],
 }
