@@ -53,6 +53,40 @@ build_tile :: proc(
 	push_letter_tile(buffer, x, y, size, letter, color, font_size)
 }
 
+TitleTile :: struct {
+	x:          i32,
+	y:          i32,
+	face_size:  i32,
+	letter:     rune,
+	face_color: rl.Color,
+	base_color: rl.Color,
+	font_size:  i32,
+	text_color: rl.Color,
+}
+
+build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
+	base_height := tile.face_size / 10
+	if base_height < 1 do base_height = 1
+
+	push_rect(
+		buffer,
+		tile.x,
+		tile.y + tile.face_size,
+		tile.face_size,
+		base_height,
+		tile.base_color,
+	)
+	push_rect(buffer, tile.x, tile.y, tile.face_size, tile.face_size, tile.face_color)
+
+	if tile.letter != 0 {
+		label := fmt.caprintf("%c", tile.letter)
+		text_width := rl.MeasureText(label, tile.font_size)
+		text_x := tile.x + (tile.face_size - text_width) / 2
+		text_y := tile.y + (tile.face_size - tile.font_size) / 2
+		push_text(buffer, label, text_x, text_y, tile.font_size, tile.text_color)
+	}
+}
+
 build_button :: proc(
 	buffer: ^RenderBuffer,
 	label: cstring,

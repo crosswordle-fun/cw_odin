@@ -3,15 +3,18 @@ package main
 import rl "vendor:raylib"
 
 MenuLayout :: struct {
-	title_x:      i32,
-	title_y:      i32,
-	title_font:   i32,
-	button_x:     i32,
-	button_width: i32,
-	button_height: i32,
-	button_font:   i32,
-	start_y:      i32,
-	exit_y:       i32,
+	title_x:         i32,
+	title_y:         i32,
+	title_face_size: i32,
+	title_gap:       i32,
+	title_font_size:  i32,
+	title_height:    i32,
+	button_x:        i32,
+	button_width:    i32,
+	button_height:   i32,
+	button_font:     i32,
+	start_y:         i32,
+	exit_y:          i32,
 }
 
 MenuSelection :: enum {
@@ -20,18 +23,22 @@ MenuSelection :: enum {
 }
 
 menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
-	title_label: cstring = "CROSSWORDLE"
+	title_label := "CROSSWORDLE"
 	start_label: cstring = "START"
 	exit_label: cstring = "EXIT"
 
-	title_font := scaled_i32(72, ctx.scale)
+	title_face_size := scaled_i32(72, ctx.scale)
+	title_gap := i32(rl.Clamp(f32(title_face_size)/20.0, 1, f32(title_face_size)))
+	title_base_height := title_face_size / 10
+	if title_base_height < 1 do title_base_height = 1
+	title_height := title_face_size + title_base_height
+	title_font_size := i32(rl.Clamp(f32(title_face_size)*0.58, 1, f32(title_face_size)))
 	button_font := scaled_i32(28, ctx.scale)
 	button_padding_x := scaled_i32(28, ctx.scale)
 	button_padding_y := scaled_i32(14, ctx.scale)
 	button_gap := scaled_i32(16, ctx.scale)
-	title_gap := scaled_i32(32, ctx.scale)
 
-	title_width := rl.MeasureText(title_label, title_font)
+	title_width := i32(len(title_label)) * title_face_size + (i32(len(title_label)) - 1) * title_gap
 	start_width := rl.MeasureText(start_label, button_font)
 	exit_width := rl.MeasureText(exit_label, button_font)
 	button_text_width := start_width
@@ -40,15 +47,18 @@ menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
 	button_width := button_text_width + button_padding_x * 2
 	button_height := button_font + button_padding_y * 2
 	title_x := (ctx.screen_width - title_width) / 2
-	title_y := (ctx.screen_height - title_font) / 2
+	title_y := (ctx.screen_height - title_height) / 2
 	button_x := (ctx.screen_width - button_width) / 2
-	start_y := title_y + title_font + title_gap
+	start_y := title_y + title_height + scaled_i32(32, ctx.scale)
 	exit_y := start_y + button_height + button_gap
 
 	return MenuLayout {
 		title_x = title_x,
 		title_y = title_y,
-		title_font = title_font,
+		title_face_size = title_face_size,
+		title_gap = title_gap,
+		title_font_size = title_font_size,
+		title_height = title_height,
 		button_x = button_x,
 		button_width = button_width,
 		button_height = button_height,
@@ -90,6 +100,30 @@ menu_selection_rect :: proc(layout: MenuLayout, selection: MenuSelection) -> (x:
 	return
 }
 
+build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout) {
+	title_label := "CROSSWORDLE"
+	face_color := rl.Color{70, 106, 152, 255}
+	base_color := rl.Color{44, 60, 90, 255}
+
+	x := layout.title_x
+	for i in 0 ..< len(title_label) {
+		build_title_tile(
+			buffer,
+			TitleTile {
+				x = x,
+				y = layout.title_y,
+				face_size = layout.title_face_size,
+				letter = rune(title_label[i]),
+				face_color = face_color,
+				base_color = base_color,
+				font_size = layout.title_font_size,
+				text_color = rl.WHITE,
+			},
+		)
+		x += layout.title_face_size + layout.title_gap
+	}
+}
+
 build_menu_mode_view :: proc(
 	frame: ^RenderFrame,
 	layout: MenuLayout,
@@ -97,7 +131,7 @@ build_menu_mode_view :: proc(
 	exit_hovered: bool,
 	selection: MenuSelection,
 ) {
-	build_text(&frame.ui, "CROSSWORDLE", layout.title_x, layout.title_y, layout.title_font, rl.WHITE)
+	build_menu_title(&frame.ui, layout)
 	build_button(
 		&frame.ui,
 		"START",
