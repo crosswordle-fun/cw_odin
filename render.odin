@@ -4,7 +4,8 @@ import "core:fmt"
 import rl "vendor:raylib"
 
 RENDER_BUFFER_CAPACITY :: 2048
-GAME_FONT_PATH :: "assets/jetbrains.ttf"
+// GAME_FONT_PATH :: "assets/jetbrains.ttf"
+GAME_FONT_PATH :: "assets/tiny5.ttf"
 TEXT_SPACING :: f32(1)
 
 game_font: rl.Font
@@ -78,7 +79,13 @@ render_frame_destroy :: proc(frame: ^RenderFrame) {
 	render_buffer_destroy(&frame.overlay)
 }
 
-render_context_new :: proc(screen_width: i32, screen_height: i32, theme: Theme, time: f32, dt: f32) -> RenderContext {
+render_context_new :: proc(
+	screen_width: i32,
+	screen_height: i32,
+	theme: Theme,
+	time: f32,
+	dt: f32,
+) -> RenderContext {
 	return RenderContext {
 		screen_width = screen_width,
 		screen_height = screen_height,
@@ -168,7 +175,14 @@ push_rect_gradient_v :: proc(
 	)
 }
 
-push_circle :: proc(buffer: ^RenderBuffer, x: f32, y: f32, radius: f32, color: rl.Color, additive := false) {
+push_circle :: proc(
+	buffer: ^RenderBuffer,
+	x: f32,
+	y: f32,
+	radius: f32,
+	color: rl.Color,
+	additive := false,
+) {
 	append(
 		&buffer.commands,
 		RenderCommand {
@@ -203,7 +217,15 @@ push_circle_gradient :: proc(
 	)
 }
 
-push_line :: proc(buffer: ^RenderBuffer, x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: rl.Color) {
+push_line :: proc(
+	buffer: ^RenderBuffer,
+	x1: f32,
+	y1: f32,
+	x2: f32,
+	y2: f32,
+	thickness: f32,
+	color: rl.Color,
+) {
 	append(
 		&buffer.commands,
 		RenderCommand {
@@ -369,11 +391,23 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 		case .Circle:
 			rl.DrawCircleV(command.point, command.radius, command.color)
 		case .Circle_Gradient:
-			rl.DrawCircleGradient(i32(command.point.x), i32(command.point.y), command.radius, command.color, command.color2)
+			rl.DrawCircleGradient(
+				i32(command.point.x),
+				i32(command.point.y),
+				command.radius,
+				command.color,
+				command.color2,
+			)
 		case .Line:
 			rl.DrawLineEx(command.point, command.point2, command.thickness, command.color)
 		case .Poly:
-			rl.DrawPoly(command.point, command.sides, command.radius, command.rotation, command.color)
+			rl.DrawPoly(
+				command.point,
+				command.sides,
+				command.radius,
+				command.rotation,
+				command.color,
+			)
 		case .Text:
 			rl.DrawTextEx(
 				game_font,
@@ -406,3 +440,4 @@ flush_render_frame :: proc(frame: RenderFrame) {
 	flush_render_buffer(frame.ui)
 	flush_render_buffer(frame.overlay)
 }
+
