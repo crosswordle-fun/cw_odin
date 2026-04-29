@@ -419,7 +419,8 @@ build_mode_tabs :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameVie
 build_gameplay_fixed_ui :: proc(buffer: ^RenderBuffer, ctx: RenderContext, state: ^GameState) {
 	build_mode_tabs(buffer, ctx, state.view)
 	build_exp_hud(buffer, ctx, state.exp, state.ui)
-	build_active_inventory_counts(buffer, ctx, state)
+	build_inventory_counts(buffer, ctx, state.frag_counts, ctx.theme.highlight_fragment, true)
+	build_inventory_counts(buffer, ctx, state.rune_counts, ctx.theme.highlight_rune, false)
 }
 
 build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: UiState) {
@@ -527,6 +528,7 @@ build_inventory_counts :: proc(
 	ctx: RenderContext,
 	counts: [LETTER_COUNT]u32,
 	color: rl.Color,
+	left_side: bool,
 ) {
 	tile_size := scaled_i32(game_data.hud.inventory_tile, ctx.scale)
 	tile_gap := scaled_i32(game_data.hud.inventory_gap, ctx.scale)
@@ -538,11 +540,14 @@ build_inventory_counts :: proc(
 	hud_height := row_height * column_rows - tile_gap
 	panel_pad_x := scaled_i32(game_data.hud.inventory_pad_x, ctx.scale)
 	panel_pad_y := scaled_i32(game_data.hud.inventory_pad_y, ctx.scale)
-	start_x :=
-		ctx.screen_width -
-		hud_width -
-		panel_pad_x -
-		scaled_i32(game_data.hud.inventory_right, ctx.scale)
+	edge_pad := scaled_i32(game_data.hud.inventory_right, ctx.scale)
+	if left_side {
+		edge_pad = scaled_i32(game_data.hud.inventory_left, ctx.scale)
+	}
+	start_x := panel_pad_x + edge_pad
+	if !left_side {
+		start_x = ctx.screen_width - hud_width - panel_pad_x - edge_pad
+	}
 	start_y := (ctx.screen_height - hud_height) / 2
 	push_rect(
 		buffer,
@@ -588,20 +593,6 @@ build_inventory_counts :: proc(
 			ctx.scale,
 		)
 	}
-}
-
-build_active_inventory_counts :: proc(
-	buffer: ^RenderBuffer,
-	ctx: RenderContext,
-	state: ^GameState,
-) {
-	inventory_counts := state.frag_counts
-	inventory_color := ctx.theme.highlight_fragment
-	if !state.show_frags {
-		inventory_counts = state.rune_counts
-		inventory_color = ctx.theme.highlight_rune
-	}
-	build_inventory_counts(buffer, ctx, inventory_counts, inventory_color)
 }
 
 build_crossword_coord_label :: proc(

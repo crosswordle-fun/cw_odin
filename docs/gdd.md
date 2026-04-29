@@ -42,7 +42,7 @@ The global player progression is represented by **EXP**, shown in the upper-left
 - Crafting runes.
 - Solving Wordle levels.
 
-Inventory is letter-specific. The player tracks counts for A-Z fragments or A-Z runes depending on the active inventory view.
+Inventory is letter-specific. The player tracks counts for A-Z fragments and A-Z runes, displayed simultaneously on opposite edges of the gameplay HUD.
 
 ## 5. Game Modes
 
@@ -119,7 +119,7 @@ The buffer can be edited with:
 
 ### 6.4 Fragment Placement Rules
 
-Fragment placement is active when the inventory view is showing fragments.
+Fragment placement is active when the fragment placement layer is active.
 
 Rules:
 
@@ -135,7 +135,7 @@ Fragment placement does not require the submitted letters to form a dictionary w
 
 ### 6.5 Rune Placement Rules
 
-Rune placement is active when the inventory view is showing runes.
+Rune placement is active when the rune placement layer is active.
 
 Rules:
 
@@ -172,7 +172,7 @@ Controls:
 - Letter keys A-Z: add a fragment letter to the selection.
 - `Backspace`: remove the last selected letter.
 - `Enter`: submit the selected recipe.
-- `Left Shift` or `Right Shift`: toggle the displayed inventory between fragments and runes.
+- `Left Shift` or `Right Shift`: toggle the active placement layer between fragments and runes.
 
 The player cannot select more copies of a letter than they currently own in fragment inventory.
 
@@ -305,7 +305,7 @@ The game tracks two 26-letter inventories:
 - **Fragments**: one count per letter A-Z.
 - **Runes**: one count per letter A-Z.
 
-The displayed inventory is controlled by the fragment/rune view toggle.
+Fragments and runes are both displayed during gameplay. The fragment/rune toggle only controls the active placement layer.
 
 ### 10.2 Sources And Sinks
 
@@ -358,7 +358,7 @@ EXP currently has no spend or level-up behavior. It functions as a cumulative sc
 | A-Z | Add letter to placement buffer |
 | `Backspace` | Remove last buffered letter |
 | `Enter` | Submit placement buffer |
-| `Left Shift` / `Right Shift` | Toggle fragment/rune inventory and placement layer |
+| `Left Shift` / `Right Shift` | Toggle fragment/rune placement layer |
 | `0` | Debug: add 10 fragments and 1 rune for every letter |
 
 ### 11.3 Cross Crafting Controls
@@ -368,7 +368,7 @@ EXP currently has no spend or level-up behavior. It functions as a cumulative sc
 | A-Z | Add fragment letter to crafting selection |
 | `Backspace` | Remove last selected fragment |
 | `Enter` | Submit crafting recipe |
-| `Left Shift` / `Right Shift` | Toggle fragment/rune inventory display |
+| `Left Shift` / `Right Shift` | Toggle fragment/rune placement layer |
 | `0` | Debug: add 10 fragments and 1 rune for every letter |
 
 ### 11.4 Wordle Controls
@@ -423,7 +423,7 @@ The central `GameState` owns all gameplay state:
 - Rune inventory.
 - Total EXP.
 - Latest Cross reward EXP.
-- Active fragment/rune view.
+- Active fragment/rune placement layer.
 - Active view.
 - Crafting state.
 - Current screen dimensions.

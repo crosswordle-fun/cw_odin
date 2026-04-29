@@ -40,7 +40,7 @@
   hud: {
     item_width: 56,
     row_height: 30,
-    exp_x: 24,
+    exp_x: 200,
     exp_y: 24,
     exp_badge_width: 132,
     exp_badge_height: 38,
@@ -53,6 +53,7 @@
     inventory_rows: 13,
     inventory_pad_x: 10,
     inventory_pad_y: 6,
+    inventory_left: 46,
     inventory_right: 46,
   },
 

@@ -54,6 +54,7 @@ GameHudData :: struct {
 	inventory_rows:    i32,
 	inventory_pad_x:   i32,
 	inventory_pad_y:   i32,
+	inventory_left:    i32,
 	inventory_right:   i32,
 }
 
