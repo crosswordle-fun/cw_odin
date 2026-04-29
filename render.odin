@@ -4,6 +4,10 @@ import "core:fmt"
 import rl "vendor:raylib"
 
 RENDER_BUFFER_CAPACITY :: 2048
+GAME_FONT_PATH :: "assets/jetbrains.ttf"
+TEXT_SPACING :: f32(1)
+
+game_font: rl.Font
 
 RenderCommandKind :: enum {
 	Rect,
@@ -83,6 +87,21 @@ render_context_new :: proc(screen_width: i32, screen_height: i32, theme: Theme, 
 		time = time,
 		dt = dt,
 	}
+}
+
+game_font_load :: proc() {
+	game_font = rl.LoadFont(GAME_FONT_PATH)
+}
+
+game_font_unload :: proc() {
+	if rl.IsFontValid(game_font) {
+		rl.UnloadFont(game_font)
+	}
+}
+
+measure_text_width :: proc(label: cstring, font_size: i32) -> i32 {
+	size := rl.MeasureTextEx(game_font, label, f32(font_size), TEXT_SPACING)
+	return i32(size.x + 0.5)
 }
 
 render_frame_clear :: proc(frame: ^RenderFrame) {
@@ -271,7 +290,7 @@ push_centered_text :: proc(
 	font_size: i32,
 	color: rl.Color,
 ) {
-	label_width := rl.MeasureText(label, font_size)
+	label_width := measure_text_width(label, font_size)
 	append(
 		&buffer.commands,
 		RenderCommand {
@@ -305,7 +324,7 @@ push_letter_tile :: proc(
 
 	if letter != 0 {
 		label := fmt.caprintf("%c", letter)
-		text_width := rl.MeasureText(label, font_size)
+		text_width := measure_text_width(label, font_size)
 		text_x := x + (size - text_width) / 2
 		text_y := y + (size - font_size) / 2
 		append(
@@ -356,16 +375,17 @@ flush_render_buffer :: proc(buffer: RenderBuffer) {
 		case .Poly:
 			rl.DrawPoly(command.point, command.sides, command.radius, command.rotation, command.color)
 		case .Text:
-			rl.DrawText(
+			rl.DrawTextEx(
+				game_font,
 				command.text,
-				i32(command.rect.x),
-				i32(command.rect.y),
-				command.font_size,
+				rl.Vector2{command.rect.x, command.rect.y},
+				f32(command.font_size),
+				TEXT_SPACING,
 				command.color,
 			)
 		case .Text_Rotated:
 			rl.DrawTextPro(
-				rl.GetFontDefault(),
+				game_font,
 				command.text,
 				rl.Vector2{command.rect.x, command.rect.y},
 				rl.Vector2{0, 0},

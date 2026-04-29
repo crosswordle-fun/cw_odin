@@ -225,7 +225,8 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 		y := text.y - ease_out(t) * 44
 		alpha := u8(255 * (1 - t))
 		label := fmt.caprintf("+%d EXP", text.amount)
-		push_text(buffer, label, i32(text.x) - rl.MeasureText(label, scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)) / 2, i32(y), scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale), with_alpha(text.color, alpha))
+		font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
+		push_text(buffer, label, i32(text.x) - measure_text_width(label, font_size) / 2, i32(y), font_size, with_alpha(text.color, alpha))
 	}
 }
 

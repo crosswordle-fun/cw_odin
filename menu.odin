@@ -39,8 +39,8 @@ menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
 	button_gap := scaled_i32(16, ctx.scale)
 
 	title_width := i32(len(title_label)) * title_face_size + (i32(len(title_label)) - 1) * title_gap
-	start_width := rl.MeasureText(start_label, button_font)
-	exit_width := rl.MeasureText(exit_label, button_font)
+	start_width := measure_text_width(start_label, button_font)
+	exit_width := measure_text_width(exit_label, button_font)
 	button_text_width := start_width
 	if exit_width > button_text_width do button_text_width = exit_width
 

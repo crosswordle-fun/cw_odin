@@ -10,6 +10,8 @@ main :: proc() {
 	rl.InitWindow(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT, "CROSSWORDLE")
 	rl.SetExitKey(rl.KeyboardKey(0))
 	defer rl.CloseWindow()
+	game_font_load()
+	defer game_font_unload()
 
 	render_frame := render_frame_new()
 	defer render_frame_destroy(&render_frame)

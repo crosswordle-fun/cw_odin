@@ -36,7 +36,7 @@ build_centered_text_in_rect :: proc(
 	font_size: i32,
 	color: rl.Color,
 ) {
-	label_width := rl.MeasureText(label, font_size)
+	label_width := measure_text_width(label, font_size)
 	label_x := x + (width - label_width) / 2
 	label_y := y + (height - font_size) / 2
 	build_text(buffer, label, label_x, label_y, font_size, color)
@@ -230,7 +230,7 @@ build_title_tile :: proc(buffer: ^RenderBuffer, tile: TitleTile) {
 
 	if tile.letter != 0 {
 		label := fmt.caprintf("%c", tile.letter)
-		text_width := rl.MeasureText(label, tile.font_size)
+		text_width := measure_text_width(label, tile.font_size)
 		text_x := tile.x + (tile.face_size - text_width) / 2
 		text_y := face_y + (tile.face_size - tile.font_size) / 2
 		push_text(buffer, label, text_x, text_y, tile.font_size, tile.text_color)
@@ -335,9 +335,9 @@ build_mode_tabs :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameVie
 	wordle_label: cstring = "WORDLE"
 	cross_label: cstring = "CROSS"
 	crafting_label: cstring = "CRAFTING"
-	wordle_text_width := rl.MeasureText(wordle_label, font_size)
-	cross_text_width := rl.MeasureText(cross_label, font_size)
-	crafting_text_width := rl.MeasureText(crafting_label, font_size)
+	wordle_text_width := measure_text_width(wordle_label, font_size)
+	cross_text_width := measure_text_width(cross_label, font_size)
+	crafting_text_width := measure_text_width(crafting_label, font_size)
 	wordle_width := wordle_text_width + padding_x * 2
 	cross_width := cross_text_width + padding_x * 2
 	crafting_width := crafting_text_width + padding_x * 2
