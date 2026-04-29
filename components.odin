@@ -530,7 +530,7 @@ build_inventory_counts :: proc(
 	panel_pad_x := scaled_i32(10, ctx.scale)
 	panel_pad_y := scaled_i32(6, ctx.scale)
 	start_x := ctx.screen_width - hud_width - panel_pad_x - scaled_i32(46, ctx.scale)
-	start_y := scaled_i32(82, ctx.scale)
+	start_y := (ctx.screen_height - hud_height) / 2
 	push_rect(
 		buffer,
 		start_x - panel_pad_x,

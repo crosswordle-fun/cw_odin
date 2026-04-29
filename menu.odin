@@ -152,20 +152,6 @@ build_menu_mode_view :: proc(
 	theme: Theme,
 	ui: UiState,
 ) {
-	panel_x := layout.button_x - scaled_i32(42, ctx.scale)
-	panel_y := layout.start_y - scaled_i32(28, ctx.scale)
-	panel_w := layout.button_width + scaled_i32(84, ctx.scale)
-	panel_h := layout.exit_y + layout.button_height - panel_y + scaled_i32(28, ctx.scale)
-	push_rect(
-		&frame.ui,
-		panel_x,
-		panel_y + scaled_i32(8, ctx.scale),
-		panel_w,
-		panel_h,
-		with_alpha(theme.surface_shadow, 74),
-	)
-	push_rect(&frame.ui, panel_x, panel_y, panel_w, panel_h, with_alpha(theme.surface, 230))
-	push_rect_lines(&frame.ui, panel_x, panel_y, panel_w, panel_h, 2, rl.BLACK)
 	build_menu_title(&frame.ui, layout, theme, ui)
 	build_button(
 		&frame.ui,
