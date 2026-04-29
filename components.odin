@@ -266,7 +266,7 @@ build_layered_tile_with_corner_letter :: proc(
 
 	if letter == 0 do return
 
-	corner_font_size := font_size / 2
+	corner_font_size := font_size / 2 + 3
 	if corner_font_size < 1 do corner_font_size = 1
 	padding := size / 10
 	if padding < 2 do padding = 2
@@ -656,34 +656,34 @@ build_crossword_selector_overlay :: proc(
 	theme: Theme,
 	ui: UiState,
 ) {
-	line_color := theme.highlight_fragment
-	if !show_frags do line_color = theme.highlight_rune
+	selector_color := theme.highlight_fragment
+	selector_shadow := theme.highlight_fragment_shadow
+	if !show_frags do selector_color = theme.highlight_rune
+	if !show_frags do selector_shadow = theme.highlight_rune_shadow
 
 	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
 	font_size := scaled_i32(BASE_SELECTOR_FONT_SIZE, scale)
+	selector_alpha: u8 = 100
 
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
 	x, y := grid_tile_position(grid, selector.row, selector.col)
-	preview_face := with_alpha(line_color, 100)
-	preview_base := rl.Color {
-		u8(f32(line_color[0]) * 0.72),
-		u8(f32(line_color[1]) * 0.72),
-		u8(f32(line_color[2]) * 0.72),
-		100,
+	preview_face := with_alpha(selector_color, selector_alpha)
+	preview_base := with_alpha(selector_shadow, selector_alpha)
+	preview_outline := theme.outline
+	if selector_buffer.count == 0 {
+		build_layered_tile(
+			buffer,
+			x + i32(shake),
+			y - grid_tile_base_height(grid.cell_size),
+			grid.cell_size,
+			0,
+			preview_face,
+			preview_base,
+			font_size,
+			theme.text,
+			preview_outline,
+		)
 	}
-	preview_outline := with_alpha(theme.outline, 100)
-	build_layered_tile(
-		buffer,
-		x + i32(shake),
-		y - grid_tile_base_height(grid.cell_size),
-		grid.cell_size,
-		0,
-		preview_face,
-		preview_base,
-		font_size,
-		theme.text,
-		preview_outline,
-	)
 
 	for i in 0 ..< selector_buffer.count {
 		row, col := selector_letter_position(grid, selector, i)
