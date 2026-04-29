@@ -453,47 +453,133 @@ build_wordle_level :: proc(buffer: ^RenderBuffer, ctx: RenderContext, level: u32
 	build_centered_text(buffer, label, ctx.screen_width, y, font_size, ctx.theme.text)
 }
 
+inventory_count_label :: proc(count: u32) -> cstring {
+	if count > 99 do return "99+"
+	return fmt.caprintf("%d", count)
+}
+
+build_inventory_count_tile :: proc(
+	buffer: ^RenderBuffer,
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	count: u32,
+	color: rl.Color,
+	theme: Theme,
+	scale: f32,
+) {
+	face_color := color
+	text_color := theme.text
+	if count == 0 {
+		face_color = theme.empty_tile
+		text_color = theme.text_muted
+	}
+
+	base_color := rl.Color {
+		u8(f32(face_color[0]) * 0.72),
+		u8(f32(face_color[1]) * 0.72),
+		u8(f32(face_color[2]) * 0.72),
+		face_color[3],
+	}
+	letter_font_size := scaled_i32(22, scale)
+	count_font_size := scaled_i32(12, scale)
+	build_title_tile(
+		buffer,
+		TitleTile {
+			x = x,
+			y = y,
+			face_size = size,
+			letter = letter,
+			face_color = face_color,
+			base_color = base_color,
+			font_size = letter_font_size,
+			text_color = text_color,
+		},
+	)
+
+	count_label := inventory_count_label(count)
+	count_x := x + scaled_i32(4, scale)
+	count_y := y + size - count_font_size - scaled_i32(3, scale)
+	build_text(buffer, count_label, count_x, count_y, count_font_size, text_color)
+}
+
 build_inventory_counts :: proc(
 	buffer: ^RenderBuffer,
 	ctx: RenderContext,
 	counts: [LETTER_COUNT]u32,
 	color: rl.Color,
 ) {
-	font_size := scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale)
-	item_width := scaled_i32(BASE_HUD_ITEM_WIDTH, ctx.scale)
-	row_height := scaled_i32(BASE_HUD_ROW_HEIGHT, ctx.scale)
-	value_offset := scaled_i32(BASE_HUD_VALUE_OFFSET, ctx.scale)
-	hud_width := item_width * 13 - 10
-	start_x := (ctx.screen_width - hud_width) / 2
-	start_y := ctx.screen_height - (row_height * 2) - 20
+	tile_size := scaled_i32(38, ctx.scale)
+	tile_gap := scaled_i32(7, ctx.scale)
+	base_height := grid_tile_base_height(tile_size)
+	row_height := tile_size + base_height + tile_gap
+	column_count := i32(2)
+	column_rows := i32(13)
+	hud_width := tile_size * column_count + tile_gap * (column_count - 1)
+	hud_height := row_height * column_rows - tile_gap
+	panel_pad_x := scaled_i32(10, ctx.scale)
+	panel_pad_y := scaled_i32(6, ctx.scale)
+	start_x := ctx.screen_width - hud_width - panel_pad_x - scaled_i32(46, ctx.scale)
+	start_y := scaled_i32(82, ctx.scale)
 	push_rect(
 		buffer,
-		start_x - scaled_i32(14, ctx.scale),
-		start_y - scaled_i32(10, ctx.scale),
-		hud_width + scaled_i32(28, ctx.scale),
-		row_height * 2 + scaled_i32(18, ctx.scale),
-		with_alpha(ctx.theme.surface, 214),
+		start_x - panel_pad_x,
+		start_y - panel_pad_y + scaled_i32(5, ctx.scale),
+		hud_width + panel_pad_x * 2,
+		hud_height + panel_pad_y * 2,
+		with_alpha(ctx.theme.surface_shadow, 82),
+	)
+	push_rect(
+		buffer,
+		start_x - panel_pad_x,
+		start_y - panel_pad_y,
+		hud_width + panel_pad_x * 2,
+		hud_height + panel_pad_y * 2,
+		with_alpha(ctx.theme.surface, 226),
 	)
 	push_rect_lines(
 		buffer,
-		start_x - scaled_i32(14, ctx.scale),
-		start_y - scaled_i32(10, ctx.scale),
-		hud_width + scaled_i32(28, ctx.scale),
-		row_height * 2 + scaled_i32(18, ctx.scale),
+		start_x - panel_pad_x,
+		start_y - panel_pad_y,
+		hud_width + panel_pad_x * 2,
+		hud_height + panel_pad_y * 2,
 		2,
 		rl.BLACK,
 	)
 
 	for i in 0 ..< LETTER_COUNT {
-		row := i32(i / 13)
-		col := i32(i % 13)
-		x := start_x + col * item_width
+		index := i32(i)
+		row := index % column_rows
+		col := index / column_rows
+		x := start_x + col * (tile_size + tile_gap)
 		y := start_y + row * row_height
-		label := fmt.caprintf("%c", FRAG_LETTERS[i])
-		value := fmt.caprintf("%d", counts[i])
-		build_text(buffer, label, x, y, font_size, color)
-		build_text(buffer, value, x + value_offset, y, font_size, color)
+		build_inventory_count_tile(
+			buffer,
+			x,
+			y,
+			tile_size,
+			FRAG_LETTERS[i],
+			counts[i],
+			color,
+			ctx.theme,
+			ctx.scale,
+		)
 	}
+}
+
+build_active_inventory_counts :: proc(
+	buffer: ^RenderBuffer,
+	ctx: RenderContext,
+	state: ^GameState,
+) {
+	inventory_counts := state.frag_counts
+	inventory_color := ctx.theme.highlight_fragment
+	if !state.show_frags {
+		inventory_counts = state.rune_counts
+		inventory_color = ctx.theme.highlight_rune
+	}
+	build_inventory_counts(buffer, ctx, inventory_counts, inventory_color)
 }
 
 build_crossword_grid :: proc(
@@ -917,6 +1003,7 @@ build_wordle_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^
 	build_mode_tabs(&frame.ui, ctx, state.view)
 	build_exp_hud(&frame.ui, ctx, state.exp, state.ui)
 	build_wordle_level(&frame.ui, ctx, state.wordle.level)
+	build_active_inventory_counts(&frame.ui, ctx, state)
 
 	switch state.wordle.view_mode {
 	case .History:
@@ -1079,13 +1166,7 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		)
 	}
 
-	inventory_counts := state.frag_counts
-	inventory_color := ctx.theme.highlight_fragment
-	if !state.show_frags {
-		inventory_counts = state.rune_counts
-		inventory_color = ctx.theme.highlight_rune
-	}
-	build_inventory_counts(&frame.ui, ctx, inventory_counts, inventory_color)
+	build_active_inventory_counts(&frame.ui, ctx, state)
 	draw_ui_effects(&frame.overlay, ctx, state.ui)
 }
 
@@ -1127,12 +1208,6 @@ build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^G
 		)
 	}
 
-	inventory_counts := state.frag_counts
-	inventory_color := ctx.theme.highlight_fragment
-	if !state.show_frags {
-		inventory_counts = state.rune_counts
-		inventory_color = ctx.theme.highlight_rune
-	}
-	build_inventory_counts(&frame.ui, ctx, inventory_counts, inventory_color)
+	build_active_inventory_counts(&frame.ui, ctx, state)
 	draw_ui_effects(&frame.overlay, ctx, state.ui)
 }
