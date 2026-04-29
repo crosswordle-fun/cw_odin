@@ -453,7 +453,14 @@ build_inventory_counts :: proc(
 	}
 }
 
-build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid, theme: Theme, ui: UiState) {
+build_crossword_grid :: proc(
+	buffer: ^RenderBuffer,
+	grid: Grid,
+	selector: Selector,
+	selector_buffer: SelectorBuffer,
+	theme: Theme,
+	ui: UiState,
+) {
 	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
 	font_size := scaled_i32(BASE_BOARD_FONT_SIZE, scale)
 
@@ -462,6 +469,14 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid, theme: Theme, ui
 		x, y := grid_tile_position(grid, tile.row, tile.col)
 		pop_key := tile.row * 100 + tile.col
 		pop_scale := ui_tile_pop_scale(ui, pop_key)
+		covered_by_selector := tile.row == selector.row && tile.col == selector.col
+		for preview_index in 0 ..< selector_buffer.count {
+			preview_row, preview_col := selector_letter_position(grid, selector, preview_index)
+			if tile.row == preview_row && tile.col == preview_col {
+				covered_by_selector = true
+				break
+			}
+		}
 
 		if grid.runes[i] != 0 {
 			build_tile_scaled(
@@ -488,6 +503,7 @@ build_crossword_grid :: proc(buffer: ^RenderBuffer, grid: Grid, theme: Theme, ui
 				pop_scale,
 			)
 		} else {
+			if covered_by_selector do continue
 			push_rect(buffer, x, y, grid.cell_size, grid.cell_size, theme.empty_tile)
 			push_rect_lines(buffer, x, y, grid.cell_size, grid.cell_size, 2, rl.BLACK)
 			push_rect_lines(buffer, x + 2, y + 2, grid.cell_size - 4, grid.cell_size - 4, 1, with_alpha(theme.surface_shadow, 62))
@@ -509,49 +525,40 @@ build_crossword_selector_overlay :: proc(
 
 	scale := f32(grid.cell_size) / f32(BASE_CELL_SIZE)
 	font_size := scaled_i32(BASE_SELECTOR_FONT_SIZE, scale)
-	label_offset := scaled_i32(BASE_SELECTOR_LABEL_OFFSET, scale)
 
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
 	x, y := grid_tile_position(grid, selector.row, selector.col)
-	pulse := 0.5 + 0.5 * math.sin(ui.time * 5)
-	outline := f32(BASE_SELECTOR_OUTLINE) * f32(grid.cell_size) / f32(BASE_CELL_SIZE)
-	push_rect_lines(
+	preview_face := line_color
+	preview_base := rl.Color{
+		u8(f32(line_color[0]) * 0.72),
+		u8(f32(line_color[1]) * 0.72),
+		u8(f32(line_color[2]) * 0.72),
+		line_color[3],
+	}
+	build_layered_tile(
 		buffer,
 		x + i32(shake),
-		y,
+		y - grid_tile_base_height(grid.cell_size),
 		grid.cell_size,
-		grid.cell_size,
-		outline + 2,
-		rl.BLACK,
-	)
-	push_rect_lines(
-		buffer,
-		x + i32(shake),
-		y,
-		grid.cell_size,
-		grid.cell_size,
-		outline,
-		with_alpha(line_color, u8(170 + pulse * 70)),
+		0,
+		preview_face,
+		preview_base,
+		font_size,
+		theme.text,
 	)
 
 	for i in 0 ..< selector_buffer.count {
 		row, col := selector_letter_position(grid, selector, i)
 		tile_x, tile_y := grid_tile_position(grid, row, col)
-		center_x := f32(tile_x + grid.cell_size / 2) + shake
-		center_y := f32(tile_y + grid.cell_size / 2)
-		if i > 0 {
-			prev_row, prev_col := selector_letter_position(grid, selector, i - 1)
-			prev_x, prev_y := grid_tile_position(grid, prev_row, prev_col)
-			push_line(buffer, f32(prev_x + grid.cell_size / 2) + shake, f32(prev_y + grid.cell_size / 2), center_x, center_y, f32(scaled_i32(5, scale)), with_alpha(line_color, 82))
-		}
-		push_rect_lines(buffer, tile_x + i32(shake), tile_y, grid.cell_size, grid.cell_size, 5, rl.BLACK)
-		push_rect_lines(buffer, tile_x + i32(shake), tile_y, grid.cell_size, grid.cell_size, 3, line_color)
-		label := fmt.caprintf("%c", selector_buffer.letters[i])
-		build_text(
+		preview_x := tile_x + i32(shake)
+		build_layered_tile(
 			buffer,
-			label,
-			tile_x + i32(shake) + grid.cell_size - font_size - label_offset,
-			tile_y + grid.cell_size - font_size - label_offset,
+			preview_x,
+			tile_y - grid_tile_base_height(grid.cell_size),
+			grid.cell_size,
+			selector_buffer.letters[i],
+			preview_face,
+			preview_base,
 			font_size,
 			theme.text,
 		)
@@ -927,7 +934,7 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	build_mode_tabs(&frame.ui, ctx, state.view)
 	build_exp_hud(&frame.ui, ctx, state.exp, state.ui)
-	build_crossword_grid(&frame.world, state.grid, ctx.theme, state.ui)
+	build_crossword_grid(&frame.world, state.grid, state.selector, state.selector_buffer, ctx.theme, state.ui)
 	build_crossword_selector_overlay(
 		&frame.overlay,
 		state.grid,
