@@ -93,21 +93,25 @@ build_tile_with_face_lift :: proc(
 
 tile_click_lift :: proc(time: f32, lift: i32, phase: i32 = 0) -> i32 {
 	if lift <= 0 do return 0
+	adjusted_lift := lift / 2
+	if adjusted_lift <= 0 do return 0
 	step := i32(time / 0.5) + phase
-	if step % 2 == 0 do return -lift
+	if step % 2 == 0 do return -adjusted_lift
 	return 0
 }
 
 wordle_submit_click_lift :: proc(age: f32, lift: i32) -> i32 {
 	if lift <= 0 do return 0
-	if age < 0 do return -lift
+	adjusted_lift := lift / 2
+	if adjusted_lift <= 0 do return 0
+	if age < 0 do return -adjusted_lift
 	if age < 0.24 {
 		t := rl.EaseBackOut(age, 0, 1, 0.24)
-		return -lift + i32(f32(lift) * 1.18 * t + 0.5)
+		return -adjusted_lift + i32(f32(adjusted_lift) * 1.18 * t + 0.5)
 	}
 	if age < 0.46 {
 		settle := saturate((age - 0.24) / 0.22)
-		return i32(f32(lift) * 0.18 * (1 - ease_out(settle)) + 0.5)
+		return i32(f32(adjusted_lift) * 0.18 * (1 - ease_out(settle)) + 0.5)
 	}
 	return 0
 }
@@ -233,6 +237,44 @@ build_layered_tile :: proc(
 		outline,
 		0,
 	)
+}
+
+build_layered_tile_with_corner_letter :: proc(
+	buffer: ^RenderBuffer,
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	face_color: rl.Color,
+	base_color: rl.Color,
+	font_size: i32,
+	text_color: rl.Color,
+	outline: rl.Color,
+) {
+	build_layered_tile(
+		buffer,
+		x,
+		y,
+		size,
+		0,
+		face_color,
+		base_color,
+		font_size,
+		text_color,
+		outline,
+	)
+
+	if letter == 0 do return
+
+	corner_font_size := font_size / 2
+	if corner_font_size < 1 do corner_font_size = 1
+	padding := size / 10
+	if padding < 2 do padding = 2
+	label := fmt.caprintf("%c", letter)
+	text_width := measure_text_width(label, corner_font_size)
+	text_x := x + size - padding - text_width
+	text_y := y + size - padding - corner_font_size
+	push_text(buffer, label, text_x, text_y, corner_font_size, text_color)
 }
 
 build_layered_tile_with_face_lift :: proc(
@@ -622,13 +664,14 @@ build_crossword_selector_overlay :: proc(
 
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
 	x, y := grid_tile_position(grid, selector.row, selector.col)
-	preview_face := line_color
+	preview_face := with_alpha(line_color, 100)
 	preview_base := rl.Color {
 		u8(f32(line_color[0]) * 0.72),
 		u8(f32(line_color[1]) * 0.72),
 		u8(f32(line_color[2]) * 0.72),
-		line_color[3],
+		100,
 	}
+	preview_outline := with_alpha(theme.outline, 100)
 	build_layered_tile(
 		buffer,
 		x + i32(shake),
@@ -639,14 +682,14 @@ build_crossword_selector_overlay :: proc(
 		preview_base,
 		font_size,
 		theme.text,
-		theme.outline,
+		preview_outline,
 	)
 
 	for i in 0 ..< selector_buffer.count {
 		row, col := selector_letter_position(grid, selector, i)
 		tile_x, tile_y := grid_tile_position(grid, row, col)
 		preview_x := tile_x + i32(shake)
-		build_layered_tile(
+		build_layered_tile_with_corner_letter(
 			buffer,
 			preview_x,
 			tile_y - grid_tile_base_height(grid.cell_size),
@@ -656,7 +699,7 @@ build_crossword_selector_overlay :: proc(
 			preview_base,
 			font_size,
 			theme.text,
-			theme.outline,
+			preview_outline,
 		)
 	}
 }
