@@ -60,6 +60,25 @@ build_tile :: proc(
 	build_layered_tile(buffer, x, y - grid_tile_base_height(size), size, letter, color, base_color, font_size, theme.text)
 }
 
+build_tile_or_square :: proc(
+	buffer: ^RenderBuffer,
+	x: i32,
+	y: i32,
+	size: i32,
+	letter: rune,
+	fill_color: rl.Color,
+	empty_color: rl.Color,
+	font_size: i32,
+	theme: Theme,
+) {
+	if letter != 0 {
+		build_tile(buffer, x, y, size, letter, fill_color, font_size, theme)
+		return
+	}
+
+	push_rect(buffer, x, y, size, size, empty_color)
+}
+
 TitleTile :: struct {
 	x:          i32,
 	y:          i32,
@@ -390,7 +409,17 @@ build_wordle_current_row :: proc(
 ) {
 	for col in 0 ..< WORDLE_WORD_LEN {
 		tile_x := x + i32(col) * (cell_size + gap)
-		build_tile(buffer, tile_x, y, cell_size, current_guess[col], theme.wordle_empty, font_size, theme)
+		build_tile_or_square(
+			buffer,
+			tile_x,
+			y,
+			cell_size,
+			current_guess[col],
+			theme.wordle_empty,
+			theme.wordle_empty,
+			font_size,
+			theme,
+		)
 	}
 }
 
@@ -623,15 +652,17 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 
 	for i in 0 ..< len(state.crafting.selected) {
 		tile_x := start_x + i32(i) * (cell_size + gap)
-		color := ctx.theme.empty_tile
-		if i32(i) < state.crafting.count do color = ctx.theme.highlight_fragment
-		build_tile(
+		letter := state.crafting.selected[i]
+		color := ctx.theme.highlight_fragment
+		if i32(i) >= state.crafting.count do color = ctx.theme.empty_tile
+		build_tile_or_square(
 			&frame.world,
 			tile_x,
 			selected_y,
 			cell_size,
-			state.crafting.selected[i],
+			letter,
 			color,
+			ctx.theme.empty_tile,
 			font_size,
 			ctx.theme,
 		)
@@ -654,13 +685,14 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		scaled_i32(BASE_HUD_FONT_SIZE, ctx.scale),
 		ctx.theme.highlight_rune,
 	)
-	build_tile(
+	build_tile_or_square(
 		&frame.world,
 		(ctx.screen_width - cell_size) / 2,
 		output_y,
 		cell_size,
 		state.crafting.crafted_rune,
 		ctx.theme.highlight_rune,
+		ctx.theme.empty_tile,
 		font_size,
 		ctx.theme,
 	)
