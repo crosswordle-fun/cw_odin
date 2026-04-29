@@ -617,6 +617,8 @@ build_crossword_grid :: proc(
 
 	for i in 0 ..< len(grid.tiles) {
 		tile := grid.tiles[i]
+		if !grid_tile_visible(grid, tile.row, tile.col) do continue
+
 		x, y := grid_tile_position(grid, tile.row, tile.col)
 		pop_key := tile.row * 100 + tile.col
 		pop_scale := ui_tile_pop_scale(ui, pop_key)
@@ -680,11 +682,11 @@ build_crossword_selector_overlay :: proc(
 	selector_alpha: u8 = 100
 
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
-	x, y := grid_tile_position(grid, selector.row, selector.col)
 	preview_face := with_alpha(selector_color, selector_alpha)
 	preview_base := with_alpha(selector_shadow, selector_alpha)
 	preview_outline := theme.outline
-	if selector_buffer.count == 0 {
+	if selector_buffer.count == 0 && grid_tile_visible(grid, selector.row, selector.col) {
+		x, y := grid_tile_position(grid, selector.row, selector.col)
 		build_layered_tile(
 			buffer,
 			x + i32(shake),
@@ -701,6 +703,8 @@ build_crossword_selector_overlay :: proc(
 
 	for i in 0 ..< selector_buffer.count {
 		row, col := selector_letter_position(grid, selector, i)
+		if !grid_tile_visible(grid, row, col) do continue
+
 		tile_x, tile_y := grid_tile_position(grid, row, col)
 		preview_x := tile_x + i32(shake)
 		build_layered_tile_with_corner_letter(

@@ -2,13 +2,83 @@ package main
 
 import rl "vendor:raylib"
 
+cross_key_delta :: proc(key: rl.KeyboardKey) -> (row_delta: i32, col_delta: i32, ok: bool) {
+	#partial switch key {
+	case rl.KeyboardKey.UP:
+		return -1, 0, true
+	case rl.KeyboardKey.DOWN:
+		return 1, 0, true
+	case rl.KeyboardKey.LEFT:
+		return 0, -1, true
+	case rl.KeyboardKey.RIGHT:
+		return 0, 1, true
+	}
+	return 0, 0, false
+}
+
+cross_latest_pressed_arrow :: proc() -> rl.KeyboardKey {
+	latest := rl.KeyboardKey.KEY_NULL
+	if rl.IsKeyPressed(rl.KeyboardKey.UP) do latest = rl.KeyboardKey.UP
+	if rl.IsKeyPressed(rl.KeyboardKey.DOWN) do latest = rl.KeyboardKey.DOWN
+	if rl.IsKeyPressed(rl.KeyboardKey.LEFT) do latest = rl.KeyboardKey.LEFT
+	if rl.IsKeyPressed(rl.KeyboardKey.RIGHT) do latest = rl.KeyboardKey.RIGHT
+	return latest
+}
+
+cross_any_down_arrow :: proc() -> rl.KeyboardKey {
+	if rl.IsKeyDown(rl.KeyboardKey.UP) do return rl.KeyboardKey.UP
+	if rl.IsKeyDown(rl.KeyboardKey.DOWN) do return rl.KeyboardKey.DOWN
+	if rl.IsKeyDown(rl.KeyboardKey.LEFT) do return rl.KeyboardKey.LEFT
+	if rl.IsKeyDown(rl.KeyboardKey.RIGHT) do return rl.KeyboardKey.RIGHT
+	return rl.KeyboardKey.KEY_NULL
+}
+
+cross_update_selector_movement :: proc(state: ^GameState, dt: f32) {
+	key := cross_latest_pressed_arrow()
+	if key == rl.KeyboardKey.KEY_NULL {
+		if state.cross_held_key != rl.KeyboardKey.KEY_NULL && rl.IsKeyDown(state.cross_held_key) {
+			key = state.cross_held_key
+		} else {
+			key = cross_any_down_arrow()
+		}
+	}
+
+	if key == rl.KeyboardKey.KEY_NULL {
+		state.cross_held_key = rl.KeyboardKey.KEY_NULL
+		state.cross_hold_age = 0
+		state.cross_repeat_age = 0
+		return
+	}
+
+	moved := false
+	if key != state.cross_held_key {
+		state.cross_held_key = key
+		state.cross_hold_age = 0
+		state.cross_repeat_age = 0
+		moved = true
+	} else {
+		state.cross_hold_age += dt
+		state.cross_repeat_age += dt
+		if state.cross_hold_age >= CROSS_MOVE_REPEAT_DELAY &&
+		   state.cross_repeat_age >= CROSS_MOVE_REPEAT_INTERVAL {
+			moved = true
+			state.cross_repeat_age = 0
+		}
+	}
+
+	if moved {
+		row_delta, col_delta, ok := cross_key_delta(key)
+		if ok {
+			selector_move(&state.selector, row_delta, col_delta, state.grid)
+			grid_update_viewport(&state.grid, state.selector)
+		}
+	}
+}
+
 cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.ZERO) do game_increment_frags_and_runes(state)
 
-	if rl.IsKeyPressed(rl.KeyboardKey.UP) do selector_move(&state.selector, -1, 0, state.grid)
-	if rl.IsKeyPressed(rl.KeyboardKey.DOWN) do selector_move(&state.selector, 1, 0, state.grid)
-	if rl.IsKeyPressed(rl.KeyboardKey.LEFT) do selector_move(&state.selector, 0, -1, state.grid)
-	if rl.IsKeyPressed(rl.KeyboardKey.RIGHT) do selector_move(&state.selector, 0, 1, state.grid)
+	cross_update_selector_movement(state, ctx.dt)
 
 	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) do selector_toggle_direction(&state.selector)
 
@@ -93,10 +163,12 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 							i,
 						)
 						tile_index := grid_tile_index(state.grid, tile_row, tile_col)
-						tile_x, tile_y := grid_tile_position(state.grid, tile_row, tile_col)
 						ui_note_tile_pop(&state.ui, tile_row * 100 + tile_col)
-						burst_x += f32(tile_x + state.grid.cell_size / 2)
-						burst_y += f32(tile_y + state.grid.cell_size / 2)
+						if grid_tile_visible(state.grid, tile_row, tile_col) {
+							tile_x, tile_y := grid_tile_position(state.grid, tile_row, tile_col)
+							burst_x += f32(tile_x + state.grid.cell_size / 2)
+							burst_y += f32(tile_y + state.grid.cell_size / 2)
+						}
 						if state.show_frags {
 							state.grid.frags[tile_index] = letter
 							state.frag_counts[frag_index] -= 1
@@ -110,8 +182,27 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 						}
 					}
 					if state.selector_buffer.count > 0 {
-						burst_x /= f32(state.selector_buffer.count)
-						burst_y /= f32(state.selector_buffer.count)
+						visible_count: i32 = 0
+						for i in 0 ..< state.selector_buffer.count {
+							tile_row, tile_col := selector_letter_position(
+								state.grid,
+								state.selector,
+								i,
+							)
+							if grid_tile_visible(state.grid, tile_row, tile_col) do visible_count += 1
+						}
+						if visible_count > 0 {
+							burst_x /= f32(visible_count)
+							burst_y /= f32(visible_count)
+						} else {
+							tile_x, tile_y := grid_tile_position(
+								state.grid,
+								state.selector.row,
+								state.selector.col,
+							)
+							burst_x = f32(tile_x + state.grid.cell_size / 2)
+							burst_y = f32(tile_y + state.grid.cell_size / 2)
+						}
 						reward_color := state.theme.highlight_fragment
 						if !state.show_frags do reward_color = state.theme.highlight_rune
 						ui_note_exp_reward(

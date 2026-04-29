@@ -11,8 +11,8 @@
 
   // Crossword grid and A-Z inventory content.
   grid: {
-    cols: 7,
-    rows: 7,
+    cols: 99,
+    rows: 99,
     cell_size: 64,
     gap: 4,
     frag_tile_exp: 500,

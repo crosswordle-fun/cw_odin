@@ -16,6 +16,10 @@ tile_row_step :: proc(cell_size: i32, gap: i32) -> i32 {
 	return cell_size + gap + grid_tile_base_height(cell_size)
 }
 
+GRID_VIEWPORT_MAX :: i32(7)
+CROSS_MOVE_REPEAT_DELAY :: f32(0.22)
+CROSS_MOVE_REPEAT_INTERVAL :: f32(0.08)
+
 screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
 	scale_x := f32(screen_width) / f32(game_data.screen.virtual_width)
 	scale_y := f32(screen_height) / f32(game_data.screen.virtual_height)
@@ -24,12 +28,12 @@ screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
 }
 
 grid_pixel_width :: proc(grid: Grid) -> i32 {
-	return grid.cols * grid.cell_size + (grid.cols - 1) * grid.gap
+	return grid.view_cols * grid.cell_size + (grid.view_cols - 1) * grid.gap
 }
 
 grid_pixel_height :: proc(grid: Grid) -> i32 {
 	base_height := grid_tile_base_height(grid.cell_size)
-	return grid.rows * (grid.cell_size + base_height) + (grid.rows - 1) * grid.gap
+	return grid.view_rows * (grid.cell_size + base_height) + (grid.view_rows - 1) * grid.gap
 }
 
 grid_row_step :: proc(grid: Grid) -> i32 {
@@ -41,9 +45,18 @@ grid_tile_index :: proc(grid: Grid, row: i32, col: i32) -> i32 {
 }
 
 grid_tile_position :: proc(grid: Grid, row: i32, col: i32) -> (x: i32, y: i32) {
-	x = grid.offset_x + col * (grid.cell_size + grid.gap)
-	y = grid.offset_y + row * grid_row_step(grid)
+	x = grid.offset_x + (col - grid.view_col) * (grid.cell_size + grid.gap)
+	y = grid.offset_y + (row - grid.view_row) * grid_row_step(grid)
 	return
+}
+
+grid_tile_visible :: proc(grid: Grid, row: i32, col: i32) -> bool {
+	return(
+		row >= grid.view_row &&
+		row < grid.view_row + grid.view_rows &&
+		col >= grid.view_col &&
+		col < grid.view_col + grid.view_cols \
+	)
 }
 
 selector_letter_position :: proc(
@@ -82,6 +95,8 @@ grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
 		rune_exp      = make([]u32, tile_count),
 		cols          = game_data.grid.cols,
 		rows          = game_data.grid.rows,
+		view_cols     = min(game_data.grid.cols, GRID_VIEWPORT_MAX),
+		view_rows     = min(game_data.grid.rows, GRID_VIEWPORT_MAX),
 		cell_size     = game_data.grid.cell_size,
 		gap           = game_data.grid.gap,
 		screen_width  = virtual_width,
@@ -105,27 +120,30 @@ grid_new :: proc(virtual_width: i32, virtual_height: i32) -> Grid {
 
 selector_new :: proc(grid: Grid) -> Selector {
 	return Selector {
-		row = clamp(game_data.grid.selector_row, 0, grid.rows - 1),
-		col = clamp(game_data.grid.selector_col, 0, grid.cols - 1),
+		row = clamp(grid.rows / 2, 0, grid.rows - 1),
+		col = clamp(grid.cols / 2, 0, grid.cols - 1),
 		down = game_data.grid.selector_down,
 	}
 }
 
 game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 	grid := grid_new(virtual_width, virtual_height)
-	return GameState {
-		grid = grid,
-		selector = selector_new(grid),
-		wordle = wordle_state_new(),
-		show_frags = true,
-		view = .Menu,
-		theme = game_data.themes[0],
-		theme_index = 0,
-		ui = ui_state_new(.Menu, 0),
+	state := GameState {
+		grid           = grid,
+		selector       = selector_new(grid),
+		wordle         = wordle_state_new(),
+		show_frags     = true,
+		view           = .Menu,
+		theme          = game_data.themes[0],
+		theme_index    = 0,
+		ui             = ui_state_new(.Menu, 0),
 		menu_selection = 0,
-		screen_width = virtual_width,
-		screen_height = virtual_height,
+		screen_width   = virtual_width,
+		screen_height  = virtual_height,
 	}
+	grid_update_viewport(&state.grid, state.selector)
+	game_update_screen_size(&state, virtual_width, virtual_height)
+	return state
 }
 
 game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_height: i32) {
@@ -138,6 +156,9 @@ game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_h
 	if state.grid.cell_size < 1 do state.grid.cell_size = 1
 	state.grid.gap = i32(f32(game_data.grid.gap) * scale + 0.5)
 	if state.grid.gap < 1 do state.grid.gap = 1
+	state.grid.view_cols = min(state.grid.cols, GRID_VIEWPORT_MAX)
+	state.grid.view_rows = min(state.grid.rows, GRID_VIEWPORT_MAX)
+	grid_update_viewport(&state.grid, state.selector)
 	state.grid.screen_width = virtual_width
 	state.grid.screen_height = virtual_height
 	state.grid.offset_x = (virtual_width - grid_pixel_width(state.grid)) / 2
@@ -149,6 +170,32 @@ game_update_screen_size :: proc(state: ^GameState, virtual_width: i32, virtual_h
 selector_move :: proc(selector: ^Selector, row_delta: i32, col_delta: i32, grid: Grid) {
 	selector.row = clamp(selector.row + row_delta, 0, grid.rows - 1)
 	selector.col = clamp(selector.col + col_delta, 0, grid.cols - 1)
+}
+
+grid_update_viewport :: proc(grid: ^Grid, selector: Selector) {
+	grid.view_cols = min(grid.cols, GRID_VIEWPORT_MAX)
+	grid.view_rows = min(grid.rows, GRID_VIEWPORT_MAX)
+
+	max_view_col := grid.cols - grid.view_cols
+	max_view_row := grid.rows - grid.view_rows
+	if max_view_col < 0 do max_view_col = 0
+	if max_view_row < 0 do max_view_row = 0
+
+	if selector.col >= grid.view_col + grid.view_cols - 1 {
+		grid.view_col = selector.col - grid.view_cols + 2
+	}
+	if selector.col <= grid.view_col {
+		grid.view_col = selector.col - 1
+	}
+	if selector.row >= grid.view_row + grid.view_rows - 1 {
+		grid.view_row = selector.row - grid.view_rows + 2
+	}
+	if selector.row <= grid.view_row {
+		grid.view_row = selector.row - 1
+	}
+
+	grid.view_col = clamp(grid.view_col, 0, max_view_col)
+	grid.view_row = clamp(grid.view_row, 0, max_view_row)
 }
 
 selector_set_tile :: proc(selector: ^Selector, row: i32, col: i32) {
@@ -364,6 +411,7 @@ game_apply_data_reload :: proc(state: ^GameState) {
 	delete(old_grid.frag_exp)
 	delete(old_grid.rune_exp)
 	selector_move(&state.selector, 0, 0, state.grid)
+	grid_update_viewport(&state.grid, state.selector)
 	state.selector_buffer.count = min(
 		state.selector_buffer.count,
 		game_data.crafting.selection_capacity,

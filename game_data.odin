@@ -42,13 +42,6 @@ game_data_validate :: proc(data: ^GameData) -> (ok: bool) {
 			return false
 		}
 	}
-	if data.grid.selector_row < 0 ||
-	   data.grid.selector_row >= data.grid.rows ||
-	   data.grid.selector_col < 0 ||
-	   data.grid.selector_col >= data.grid.cols {
-		fmt.eprintln("game_data: selector default must be inside the grid")
-		return false
-	}
 	if data.wordle.word_length <= 0 || data.wordle.word_length > WORDLE_WORD_LEN {
 		fmt.eprintf("game_data: word_length must be 1..%d\n", WORDLE_WORD_LEN)
 		return false
