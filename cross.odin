@@ -1,6 +1,6 @@
 package main
 
-import rl "vendor:raylib"
+import rl "raylib"
 
 cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.ZERO) do game_increment_frags_and_runes(state)
@@ -99,6 +99,8 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 
 				if valid {
 					state.cross_reward_exp = 0
+					burst_x := f32(0)
+					burst_y := f32(0)
 					for i in 0 ..< state.selector_buffer.count {
 						letter := state.selector_buffer.letters[i]
 						frag_index := i32(letter - 'A')
@@ -108,6 +110,10 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 							i,
 						)
 						tile_index := grid_tile_index(state.grid, tile_row, tile_col)
+						tile_x, tile_y := grid_tile_position(state.grid, tile_row, tile_col)
+						ui_note_tile_pop(&state.ui, tile_row * 100 + tile_col)
+						burst_x += f32(tile_x + state.grid.cell_size / 2)
+						burst_y += f32(tile_y + state.grid.cell_size / 2)
 						if state.show_frags {
 							state.grid.frags[tile_index] = letter
 							state.frag_counts[frag_index] -= 1
@@ -120,9 +126,23 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 							state.cross_reward_exp += state.grid.rune_exp[tile_index]
 						}
 					}
+					if state.selector_buffer.count > 0 {
+						burst_x /= f32(state.selector_buffer.count)
+						burst_y /= f32(state.selector_buffer.count)
+						reward_color := state.theme.highlight_fragment
+						if !state.show_frags do reward_color = state.theme.highlight_rune
+						ui_note_exp_reward(&state.ui, state.cross_reward_exp, burst_x, burst_y, state.theme.exp)
+						ui_spawn_burst(&state.ui, burst_x, burst_y, reward_color, 10)
+					}
 					selector_buffer_clear(&state.selector_buffer)
+				} else {
+					ui_note_invalid(&state.ui)
 				}
+			} else {
+				ui_note_invalid(&state.ui)
 			}
+		} else {
+			ui_note_invalid(&state.ui)
 		}
 	}
 

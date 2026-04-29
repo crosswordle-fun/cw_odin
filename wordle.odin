@@ -1,6 +1,6 @@
 package main
 
-import rl "vendor:raylib"
+import rl "raylib"
 
 wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	cell_size := scaled_i32(BASE_CELL_SIZE, ctx.scale)
@@ -109,6 +109,7 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 				solution := wordle_current_solution(state.wordle)
 				guess := wordle_evaluate_guess(state.wordle.current_guess, solution)
 				append(&state.wordle.guesses, guess)
+				ui_note_wordle_guess(&state.ui, i32(len(state.wordle.guesses)) - 1)
 				wordle_clear_current_guess(&state.wordle)
 
 				solved := true
@@ -129,12 +130,22 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 					}
 					state.wordle.reward_exp = WORDLE_LEVEL_EXP_REWARD
 					state.exp += state.wordle.reward_exp
+					ui_note_exp_reward(
+						&state.ui,
+						state.wordle.reward_exp,
+						f32(state.screen_width / 2),
+						f32(scaled_i32(360, ctx.scale)),
+						state.theme.exp,
+					)
+					ui_spawn_burst(&state.ui, f32(state.screen_width / 2), f32(scaled_i32(360, ctx.scale)), state.theme.wordle_correct, 24)
 					state.wordle.substate = .Won
 				}
 				total_rows := i32(len(state.wordle.guesses))
 				if state.wordle.substate == .Playing do total_rows += 1
 				state.wordle.scroll_row = total_rows - visible_rows
 				if state.wordle.scroll_row < 0 do state.wordle.scroll_row = 0
+			} else if rl.IsKeyPressed(rl.KeyboardKey.ENTER) {
+				ui_note_invalid(&state.ui)
 			}
 		} else if state.wordle.substate == .Won {
 			if rl.IsKeyPressed(rl.KeyboardKey.ENTER) {

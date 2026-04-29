@@ -1,6 +1,6 @@
 package main
 
-import rl "vendor:raylib"
+import rl "raylib"
 
 crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
 	if rl.IsKeyPressed(rl.KeyboardKey.ZERO) do game_increment_frags_and_runes(state)
@@ -18,6 +18,7 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 	if rl.IsKeyPressed(rl.KeyboardKey.ENTER) {
 		required := Frags{}
 		valid := true
+		did_craft := false
 		for i in 0 ..< state.crafting.count {
 			letter := state.crafting.selected[i]
 			frag_index := i32(letter - 'A')
@@ -53,7 +54,11 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 				state.rune_counts[frag_index] += 1
 				state.exp += RUNE_CRAFT_EXP_REWARD
 				state.crafting.crafted_rune = letter
+				ui_note_crafted_rune(&state.ui)
+				ui_note_exp_reward(&state.ui, RUNE_CRAFT_EXP_REWARD, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.exp)
+				ui_spawn_burst(&state.ui, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.highlight_rune, 22)
 				crafting_clear_selection(&state.crafting)
+				did_craft = true
 			}
 		} else if valid && state.crafting.count == 5 {
 			for i in 0 ..< state.crafting.count {
@@ -73,9 +78,14 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 				state.rune_counts[crafted_index] += 1
 				state.exp += RUNE_CRAFT_EXP_REWARD
 				state.crafting.crafted_rune = FRAG_LETTERS[crafted_index]
+				ui_note_crafted_rune(&state.ui)
+				ui_note_exp_reward(&state.ui, RUNE_CRAFT_EXP_REWARD, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.exp)
+				ui_spawn_burst(&state.ui, f32(state.screen_width / 2), f32(scaled_i32(410, ctx.scale)), state.theme.highlight_rune, 22)
 				crafting_clear_selection(&state.crafting)
+				did_craft = true
 			}
 		}
+		if !did_craft do ui_note_invalid(&state.ui)
 	}
 
 	if rl.IsKeyPressed(rl.KeyboardKey.LEFT_SHIFT) || rl.IsKeyPressed(rl.KeyboardKey.RIGHT_SHIFT) {

@@ -1,7 +1,7 @@
 package main
 
 import "core:math"
-import rl "vendor:raylib"
+import rl "raylib"
 
 main :: proc() {
 	rl.SetTargetFPS(60)
@@ -19,7 +19,9 @@ main :: proc() {
 	state := game_state_new(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT)
 
 	for !rl.WindowShouldClose() {
+		dt := rl.GetFrameTime()
 		game_update_screen_size(&state, VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT)
+		ui_update(&state, dt)
 		escape_pressed := rl.IsKeyPressed(rl.KeyboardKey.ESCAPE)
 
 		if state.view != .Menu {
@@ -35,7 +37,8 @@ main :: proc() {
 		if rl.IsKeyPressed(rl.KeyboardKey.NINE) do game_cycle_theme(&state)
 
 		render_frame_clear(&render_frame)
-		ctx := render_context_new(state.screen_width, state.screen_height, state.theme)
+		ctx := render_context_new(state.screen_width, state.screen_height, state.theme, state.ui.time, state.ui.dt)
+		build_cozy_background(&render_frame.world, ctx)
 		switch state.view {
 		case .Menu:
 			menu_mode_frame(&render_frame, ctx, &state)
@@ -46,6 +49,7 @@ main :: proc() {
 		case .Crafting:
 			crafting_mode_frame(&render_frame, ctx, &state)
 		}
+		draw_view_transition(&render_frame.overlay, ctx, state.ui)
 
 		if state.should_quit do break
 
@@ -71,7 +75,7 @@ main :: proc() {
 
 		rl.BeginDrawing()
 		rl.ClearBackground(ctx.theme.canvas)
-		rl.DrawTexturePro(render_target.texture, source, dest, rl.Vector2{0, 0}, 0, ctx.theme.text)
+		rl.DrawTexturePro(render_target.texture, source, dest, rl.Vector2{0, 0}, 0, rl.WHITE)
 		rl.EndDrawing()
 	}
 }

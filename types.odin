@@ -1,5 +1,7 @@
 package main
 
+import rl "raylib"
+
 VIRTUAL_SCREEN_WIDTH :: 1280
 VIRTUAL_SCREEN_HEIGHT :: 720
 BASE_CELL_SIZE :: 64
@@ -165,6 +167,63 @@ WordleState :: struct {
 	reward_exp:      u32,
 }
 
+UI_PARTICLE_CAPACITY :: 160
+UI_FLOATING_TEXT_CAPACITY :: 16
+UI_TILE_POP_CAPACITY :: 128
+
+UiParticleKind :: enum {
+	Sparkle,
+	Fleck,
+}
+
+UiParticle :: struct {
+	active:    bool,
+	kind:      UiParticleKind,
+	x:         f32,
+	y:         f32,
+	vx:        f32,
+	vy:        f32,
+	age:       f32,
+	lifetime:  f32,
+	size:      f32,
+	rotation:  f32,
+	spin:      f32,
+	color:     rl.Color,
+}
+
+UiFloatingText :: struct {
+	active:    bool,
+	amount:    u32,
+	x:         f32,
+	y:         f32,
+	age:       f32,
+	lifetime:  f32,
+	color:     rl.Color,
+}
+
+UiTilePop :: struct {
+	active: bool,
+	key:    i32,
+	age:    f32,
+}
+
+UiState :: struct {
+	time:                    f32,
+	dt:                      f32,
+	view_enter_time:         f32,
+	previous_view:           GameView,
+	last_exp:                u32,
+	exp_gain:                u32,
+	exp_gain_age:            f32,
+	invalid_age:             f32,
+	wordle_reveal_age:       f32,
+	wordle_reveal_guess_row: i32,
+	crafted_rune_age:        f32,
+	particles:               [UI_PARTICLE_CAPACITY]UiParticle,
+	floating_text:           [UI_FLOATING_TEXT_CAPACITY]UiFloatingText,
+	tile_pops:               [UI_TILE_POP_CAPACITY]UiTilePop,
+}
+
 GameState :: struct {
 	grid:             Grid,
 	selector:         Selector,
@@ -179,6 +238,7 @@ GameState :: struct {
 	crafting:         CraftingState,
 	theme:            Theme,
 	theme_index:      i32,
+	ui:               UiState,
 	menu_selection:   i32,
 	should_quit:      bool,
 	screen_width:     i32,

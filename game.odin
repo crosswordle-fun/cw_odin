@@ -112,6 +112,7 @@ game_state_new :: proc(virtual_width: i32, virtual_height: i32) -> GameState {
 		view = .Menu,
 		theme = THEMES[0],
 		theme_index = 0,
+		ui = ui_state_new(.Menu, 0),
 		menu_selection = 0,
 		screen_width = virtual_width,
 		screen_height = virtual_height,
@@ -180,6 +181,7 @@ game_cycle_theme :: proc(state: ^GameState) {
 game_set_view :: proc(state: ^GameState, view: GameView) {
 	if state.view == view do return
 
+	ui_note_view_change(&state.ui, state.view)
 	state.view = view
 }
 

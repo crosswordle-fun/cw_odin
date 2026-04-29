@@ -1,6 +1,6 @@
 package main
 
-import rl "vendor:raylib"
+import rl "raylib"
 
 Theme :: struct {
 	background:                rl.Color,
@@ -26,31 +26,30 @@ Theme :: struct {
 	button_text_inverted:      rl.Color,
 }
 
-THEME_COUNT :: 5
+THEME_COUNT :: 1
 
 THEMES := [?]Theme {
 	Theme {
-		background = rl.Color{20, 20, 24, 255},
-		canvas = rl.BLACK,
-		text = rl.WHITE,
-		text_inverted = rl.Color{20, 20, 24, 255},
-		text_muted = rl.LIGHTGRAY,
-		surface = rl.GRAY,
-		surface_shadow = rl.DARKGRAY,
-		empty_tile = rl.DARKGRAY,
-		highlight_fragment = rl.SKYBLUE,
-		highlight_fragment_shadow = rl.DARKBLUE,
-		highlight_rune = rl.PURPLE,
-		highlight_rune_shadow = rl.DARKPURPLE,
-		exp = rl.GOLD,
-		wordle_correct = rl.GREEN,
-		wordle_present = rl.GOLD,
-		wordle_miss = rl.GRAY,
-		wordle_empty = rl.DARKGRAY,
-		button_fill = rl.WHITE,
-		button_shadow = rl.Color{20, 20, 24, 255},
-		button_text = rl.WHITE,
-		button_text_inverted = rl.Color{20, 20, 24, 255},
+		background = rl.Color{250, 239, 216, 255},
+		canvas = rl.Color{74, 55, 43, 255},
+		text = rl.Color{71, 50, 39, 255},
+		text_inverted = rl.Color{255, 248, 229, 255},
+		text_muted = rl.Color{128, 101, 82, 255},
+		surface = rl.Color{255, 246, 224, 255},
+		surface_shadow = rl.Color{205, 164, 116, 255},
+		empty_tile = rl.Color{226, 211, 184, 255},
+		highlight_fragment = rl.Color{113, 173, 190, 255},
+		highlight_fragment_shadow = rl.Color{66, 123, 143, 255},
+		highlight_rune = rl.Color{151, 87, 120, 255},
+		highlight_rune_shadow = rl.Color{104, 54, 80, 255},
+		exp = rl.Color{210, 143, 43, 255},
+		wordle_correct = rl.Color{112, 157, 103, 255},
+		wordle_present = rl.Color{200, 153, 75, 255},
+		wordle_miss = rl.Color{158, 146, 129, 255},
+		wordle_empty = rl.Color{238, 226, 203, 255},
+		button_fill = rl.Color{116, 151, 143, 255},
+		button_shadow = rl.Color{172, 134, 94, 255},
+		button_text = rl.Color{71, 50, 39, 255},
+		button_text_inverted = rl.Color{255, 248, 229, 255},
 	},
 }
-

@@ -1,6 +1,7 @@
 package main
 
-import rl "vendor:raylib"
+import "core:math"
+import rl "raylib"
 
 MenuLayout :: struct {
 	title_x:         i32,
@@ -100,18 +101,24 @@ menu_selection_rect :: proc(layout: MenuLayout, selection: MenuSelection) -> (x:
 	return
 }
 
-build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme) {
+build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme, ui: UiState) {
 	title_label := "CROSSWORDLE"
 	face_color := theme.surface
 	base_color := theme.surface_shadow
 
 	x := layout.title_x
 	for i in 0 ..< len(title_label) {
+		tile_age := ui.time - ui.view_enter_time - f32(i) * 0.045
+		bounce := f32(0)
+		if tile_age < 0.5 {
+			bounce = (1 - saturate(tile_age / 0.5)) * -28
+			if tile_age > 0 do bounce = -28 + rl.EaseBounceOut(tile_age, 0, 28, 0.5)
+		}
 		build_title_tile(
 			buffer,
 			TitleTile {
 				x = x,
-				y = layout.title_y,
+				y = layout.title_y + i32(bounce),
 				face_size = layout.title_face_size,
 				letter = rune(title_label[i]),
 				face_color = face_color,
@@ -126,13 +133,21 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme
 
 build_menu_mode_view :: proc(
 	frame: ^RenderFrame,
+	ctx: RenderContext,
 	layout: MenuLayout,
 	start_hovered: bool,
 	exit_hovered: bool,
 	selection: MenuSelection,
 	theme: Theme,
+	ui: UiState,
 ) {
-	build_menu_title(&frame.ui, layout, theme)
+	panel_x := layout.button_x - scaled_i32(42, ctx.scale)
+	panel_y := layout.start_y - scaled_i32(28, ctx.scale)
+	panel_w := layout.button_width + scaled_i32(84, ctx.scale)
+	panel_h := layout.exit_y + layout.button_height - panel_y + scaled_i32(28, ctx.scale)
+	push_rect_rounded(&frame.ui, panel_x, panel_y + scaled_i32(8, ctx.scale), panel_w, panel_h, 0.12, with_alpha(theme.surface_shadow, 74))
+	push_rect_rounded(&frame.ui, panel_x, panel_y, panel_w, panel_h, 0.12, with_alpha(theme.surface, 230))
+	build_menu_title(&frame.ui, layout, theme, ui)
 	build_button(
 		&frame.ui,
 		"START",
@@ -157,15 +172,18 @@ build_menu_mode_view :: proc(
 	)
 
 	border_x, border_y, border_width, border_height := menu_selection_rect(layout, selection)
-	push_rect_lines(
+	selection_pulse := 0.5 + 0.5 * math.sin(ui.time * 6)
+	push_rect_rounded_lines(
 		&frame.overlay,
 		border_x,
 		border_y,
 		border_width,
 		border_height,
+		0.24,
 		3,
-		theme.text,
+		with_alpha(theme.text, u8(150 + selection_pulse * 80)),
 	)
+	draw_ui_effects(&frame.overlay, ctx, ui)
 }
 
 menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
@@ -208,5 +226,5 @@ menu_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSta
 	}
 
 	state.menu_selection = menu_selection_to_state(selection)
-	build_menu_mode_view(frame, layout, start_hovered, exit_hovered, selection, ctx.theme)
+	build_menu_mode_view(frame, ctx, layout, start_hovered, exit_hovered, selection, ctx.theme, state.ui)
 }
