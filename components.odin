@@ -881,6 +881,18 @@ build_crossword_coord_label :: proc(
 	theme: Theme,
 ) {
 	x, y := grid_tile_position(grid, row, col)
+	build_crossword_coord_label_at(buffer, grid, row, col, x, y, theme)
+}
+
+build_crossword_coord_label_at :: proc(
+	buffer: ^RenderBuffer,
+	grid: Grid,
+	row: i32,
+	col: i32,
+	x: i32,
+	y: i32,
+	theme: Theme,
+) {
 	scale := f32(grid.cell_size) / f32(game_data.grid.cell_size)
 	font_size := scaled_i32(10, scale)
 	padding := scaled_i32(3, scale)
@@ -914,12 +926,15 @@ build_crossword_grid :: proc(
 		x, y := grid_tile_position(grid, tile.row, tile.col)
 		pop_key := tile.row * 100 + tile.col
 		pop_scale := ui_tile_pop_scale(ui, pop_key)
-		covered_by_selector := tile.row == selector.row && tile.col == selector.col
-		for preview_index in 0 ..< selector_buffer.count {
-			preview_row, preview_col := selector_letter_position(grid, selector, preview_index)
-			if tile.row == preview_row && tile.col == preview_col {
-				covered_by_selector = true
-				break
+		covered_by_selector := false
+		if !ui.selector_move_active {
+			covered_by_selector = tile.row == selector.row && tile.col == selector.col
+			for preview_index in 0 ..< selector_buffer.count {
+				preview_row, preview_col := selector_letter_position(grid, selector, preview_index)
+				if tile.row == preview_row && tile.col == preview_col {
+					covered_by_selector = true
+					break
+				}
 			}
 		}
 
@@ -976,6 +991,9 @@ build_crossword_selector_overlay :: proc(
 	selector_alpha: u8 = 100
 
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
+	move_x, move_y := ui_selector_move_offset(ui)
+	selector_offset_x := i32(shake + move_x)
+	selector_offset_y := i32(move_y)
 	preview_outline := theme.outline
 	if selector_buffer.count == 0 && grid_tile_visible(grid, selector.row, selector.col) {
 		x, y := grid_tile_position(grid, selector.row, selector.col)
@@ -987,8 +1005,8 @@ build_crossword_selector_overlay :: proc(
 		}
 		build_layered_tile(
 			buffer,
-			x + i32(shake),
-			y - grid_tile_base_height(grid.cell_size),
+			x + selector_offset_x,
+			y + selector_offset_y - grid_tile_base_height(grid.cell_size),
 			grid.cell_size,
 			0,
 			preview_face,
@@ -997,7 +1015,15 @@ build_crossword_selector_overlay :: proc(
 			theme.text,
 			preview_outline,
 		)
-		build_crossword_coord_label(buffer, grid, selector.row, selector.col, theme)
+		build_crossword_coord_label_at(
+			buffer,
+			grid,
+			selector.row,
+			selector.col,
+			x + selector_offset_x,
+			y + selector_offset_y,
+			theme,
+		)
 	}
 
 	for i in 0 ..< selector_buffer.count {
@@ -1005,7 +1031,8 @@ build_crossword_selector_overlay :: proc(
 		if !grid_tile_visible(grid, row, col) do continue
 
 		tile_x, tile_y := grid_tile_position(grid, row, col)
-		preview_x := tile_x + i32(shake)
+		preview_x := tile_x + selector_offset_x
+		preview_y := tile_y + selector_offset_y
 		preview_face := selector_color
 		preview_base := selector_shadow
 		if grid_tile_has_cross_letter(grid, row, col) {
@@ -1015,7 +1042,7 @@ build_crossword_selector_overlay :: proc(
 		build_layered_tile_with_corner_letter(
 			buffer,
 			preview_x,
-			tile_y - grid_tile_base_height(grid.cell_size),
+			preview_y - grid_tile_base_height(grid.cell_size),
 			grid.cell_size,
 			selector_buffer.letters[i],
 			preview_face,
@@ -1024,7 +1051,7 @@ build_crossword_selector_overlay :: proc(
 			theme.text,
 			preview_outline,
 		)
-		build_crossword_coord_label(buffer, grid, row, col, theme)
+		build_crossword_coord_label_at(buffer, grid, row, col, preview_x, preview_y, theme)
 	}
 }
 

@@ -33,6 +33,19 @@ cross_any_down_arrow :: proc() -> rl.KeyboardKey {
 	return rl.KeyboardKey.KEY_NULL
 }
 
+cross_move_selector :: proc(state: ^GameState, row_delta: i32, col_delta: i32) {
+	old_x, old_y := grid_tile_position(state.grid, state.selector.row, state.selector.col)
+	anim_x, anim_y := ui_selector_move_offset(state.ui)
+	visual_x := f32(old_x) + anim_x
+	visual_y := f32(old_y) + anim_y
+
+	selector_move(&state.selector, row_delta, col_delta, state.grid)
+	grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
+
+	new_x, new_y := grid_tile_position(state.grid, state.selector.row, state.selector.col)
+	ui_note_selector_move(&state.ui, visual_x - f32(new_x), visual_y - f32(new_y))
+}
+
 cross_update_selector_movement :: proc(state: ^GameState, dt: f32) {
 	key := cross_latest_pressed_arrow()
 	if key == rl.KeyboardKey.KEY_NULL {
@@ -69,8 +82,7 @@ cross_update_selector_movement :: proc(state: ^GameState, dt: f32) {
 	if moved {
 		row_delta, col_delta, ok := cross_key_delta(key)
 		if ok {
-			selector_move(&state.selector, row_delta, col_delta, state.grid)
-			grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
+			cross_move_selector(state, row_delta, col_delta)
 		}
 	}
 }

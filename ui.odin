@@ -56,6 +56,14 @@ ui_update :: proc(state: ^GameState, dt: f32) {
 	state.ui.invalid_age += frame_dt
 	state.ui.wordle_reveal_age += frame_dt
 	state.ui.crafted_rune_age += frame_dt
+	if state.ui.selector_move_active {
+		state.ui.selector_move_age += frame_dt
+		if state.ui.selector_move_age >= CROSS_SELECTOR_MOVE_DURATION {
+			state.ui.selector_move_active = false
+			state.ui.selector_move_offset_x = 0
+			state.ui.selector_move_offset_y = 0
+		}
+	}
 
 	for i in 0 ..< len(state.ui.particles) {
 		if !state.ui.particles[i].active do continue
@@ -233,6 +241,33 @@ ui_note_tile_pop :: proc(ui: ^UiState, key: i32) {
 			key    = key,
 		}
 	}
+}
+
+ui_note_selector_move :: proc(ui: ^UiState, offset_x: f32, offset_y: f32) {
+	if math.abs(offset_x) < 0.5 && math.abs(offset_y) < 0.5 {
+		ui.selector_move_active = false
+		ui.selector_move_offset_x = 0
+		ui.selector_move_offset_y = 0
+		ui.selector_move_age = 0
+		return
+	}
+
+	ui.selector_move_active = true
+	ui.selector_move_age = 0
+	ui.selector_move_offset_x = offset_x
+	ui.selector_move_offset_y = offset_y
+}
+
+ui_selector_move_offset :: proc(ui: UiState) -> (x: f32, y: f32) {
+	if !ui.selector_move_active do return 0, 0
+	t := saturate(ui.selector_move_age / CROSS_SELECTOR_MOVE_DURATION)
+	progress := rl.EaseBackOut(t, 0, 1, 1)
+	remaining := 1 - progress
+	if t > 0.62 {
+		snap_t := saturate((t - 0.62) / 0.38)
+		remaining += math.sin(snap_t * math.PI * 2) * (1 - snap_t) * 0.045
+	}
+	return ui.selector_move_offset_x * remaining, ui.selector_move_offset_y * remaining
 }
 
 ui_tile_pop_scale :: proc(ui: UiState, key: i32) -> f32 {
