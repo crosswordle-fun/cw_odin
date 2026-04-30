@@ -42,6 +42,43 @@ build_centered_text_in_rect :: proc(
 	build_text(buffer, label, label_x, label_y, font_size, color)
 }
 
+build_text_badge :: proc(
+	buffer: ^RenderBuffer,
+	label: cstring,
+	x: i32,
+	y: i32,
+	font_size: i32,
+	color: rl.Color,
+	theme: Theme,
+	scale: f32,
+) {
+	padding_x := scaled_i32(12, scale)
+	padding_y := scaled_i32(7, scale)
+	text_width := measure_text_width(label, font_size)
+	badge_x := x - padding_x
+	badge_y := y - padding_y
+	badge_w := text_width + padding_x * 2
+	badge_h := font_size + padding_y * 2
+	push_rect(buffer, badge_x, badge_y, badge_w, badge_h, with_alpha(theme.surface, 236))
+	push_rect_lines(buffer, badge_x, badge_y, badge_w, badge_h, 2, theme.outline)
+	build_text(buffer, label, x, y, font_size, color)
+}
+
+build_centered_text_badge :: proc(
+	buffer: ^RenderBuffer,
+	label: cstring,
+	screen_width: i32,
+	y: i32,
+	font_size: i32,
+	color: rl.Color,
+	theme: Theme,
+	scale: f32,
+) {
+	text_width := measure_text_width(label, font_size)
+	x := (screen_width - text_width) / 2
+	build_text_badge(buffer, label, x, y, font_size, color, theme, scale)
+}
+
 build_cozy_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
 	push_rect(buffer, 0, 0, ctx.screen_width, ctx.screen_height, ctx.theme.background)
 	build_theme_tile_background(buffer, ctx)
@@ -691,7 +728,16 @@ build_wordle_level :: proc(buffer: ^RenderBuffer, ctx: RenderContext, level: u32
 	font_size := scaled_i32(game_data.fonts.hud, ctx.scale)
 	y := scaled_i32(game_data.wordle.level_y, ctx.scale)
 	label := fmt.caprintf("%s %d", game_data.wordle.level_label_prefix, level + 1)
-	build_centered_text(buffer, label, ctx.screen_width, y, font_size, ctx.theme.text)
+	build_centered_text_badge(
+		buffer,
+		label,
+		ctx.screen_width,
+		y,
+		font_size,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
+	)
 }
 
 wordle_display_level :: proc(wordle: WordleState) -> u32 {
@@ -1172,7 +1218,16 @@ build_wordle_history_board :: proc(
 	exp_x := reward_x
 	exp_y := reward_y + (history_reward_size - exp_font_size) / 2
 	tile_x := reward_x + exp_width + reward_gap
-	build_text(buffer, exp_label, exp_x, exp_y, exp_font_size, ctx.theme.exp)
+	build_text_badge(
+		buffer,
+		exp_label,
+		exp_x,
+		exp_y,
+		exp_font_size,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
+	)
 	build_tile(
 		buffer,
 		tile_x,
@@ -1205,21 +1260,25 @@ build_wordle_won_panel :: proc(
 	reward_y := reward_label_y + scaled_i32(34, ctx.scale)
 	reward_detail_y := reward_y + cell_size + scaled_i32(14, ctx.scale)
 
-	build_centered_text(
+	build_centered_text_badge(
 		buffer,
 		game_data.wordle.win_title,
 		ctx.screen_width,
 		title_y,
 		scaled_i32(game_data.fonts.title, ctx.scale),
 		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
 	)
-	build_centered_text(
+	build_centered_text_badge(
 		buffer,
 		game_data.wordle.win_subtitle,
 		ctx.screen_width,
 		subtitle_y,
 		scaled_i32(game_data.fonts.hud, ctx.scale),
-		ctx.theme.text_muted,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
 	)
 
 	for col in 0 ..< game_data.wordle.word_length {
@@ -1236,13 +1295,15 @@ build_wordle_won_panel :: proc(
 		)
 	}
 
-	build_centered_text(
+	build_centered_text_badge(
 		buffer,
 		game_data.wordle.rewards_label,
 		ctx.screen_width,
 		reward_label_y,
 		scaled_i32(game_data.fonts.hud, ctx.scale),
-		ctx.theme.highlight_fragment,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
 	)
 	reward_scale := f32(1)
 	if ui.wordle_reveal_age < 1.1 do reward_scale = 0.86 + 0.14 * rl.EaseBackOut(saturate(ui.wordle_reveal_age / 0.38), 0, 1, 1)
@@ -1258,13 +1319,15 @@ build_wordle_won_panel :: proc(
 		reward_scale,
 	)
 	reward_detail := fmt.caprintf("+%d EXP", wordle.reward_exp)
-	build_centered_text(
+	build_centered_text_badge(
 		buffer,
 		reward_detail,
 		ctx.screen_width,
 		reward_detail_y,
 		scaled_i32(game_data.fonts.hud, ctx.scale),
-		ctx.theme.exp,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
 	)
 }
 
@@ -1316,13 +1379,15 @@ crafting_status_label :: proc(crafting: CraftingState) -> cstring {
 }
 
 build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameState) {
-	build_centered_text(
+	build_centered_text_badge(
 		&frame.ui,
 		game_data.crafting.fragment_label,
 		ctx.screen_width,
 		scaled_i32(170, ctx.scale),
 		scaled_i32(game_data.fonts.hud, ctx.scale),
-		ctx.theme.highlight_fragment,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
 	)
 
 	cell_size := scaled_i32(game_data.grid.cell_size, ctx.scale)
@@ -1372,22 +1437,26 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 		}
 	}
 
-	build_centered_text(
+	build_centered_text_badge(
 		&frame.ui,
 		crafting_status_label(state.crafting),
 		ctx.screen_width,
 		status_y,
 		scaled_i32(game_data.fonts.hud, ctx.scale),
-		ctx.theme.text_muted,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
 	)
 
-	build_centered_text(
+	build_centered_text_badge(
 		&frame.ui,
 		game_data.crafting.latest_rune_label,
 		ctx.screen_width,
 		output_label_y,
 		scaled_i32(game_data.fonts.hud, ctx.scale),
-		ctx.theme.highlight_rune,
+		ctx.theme.text,
+		ctx.theme,
+		ctx.scale,
 	)
 	rune_scale := f32(1)
 	if state.crafting.crafted_rune != 0 && state.ui.crafted_rune_age < 0.8 {
@@ -1421,13 +1490,15 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 	}
 	if state.crafting.crafted_rune != 0 {
 		reward_detail := fmt.caprintf("+%d EXP", game_data.crafting.exp_reward)
-		build_centered_text(
+		build_centered_text_badge(
 			&frame.ui,
 			reward_detail,
 			ctx.screen_width,
 			output_exp_y,
 			scaled_i32(game_data.fonts.hud, ctx.scale),
-			ctx.theme.exp,
+			ctx.theme.text,
+			ctx.theme,
+			ctx.scale,
 		)
 	}
 
