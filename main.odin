@@ -85,8 +85,9 @@ main :: proc() {
 	)
 	if !rl.IsWindowReady() do return
 	rl.SetExitKey(rl.KeyboardKey(0))
-	defer rl.CloseWindow()
+	game_font_use_default()
 	game_font_load()
+	defer rl.CloseWindow()
 	defer game_font_unload()
 
 	render_frame := render_frame_new()
@@ -133,6 +134,7 @@ main :: proc() {
 		} else if escape_pressed {
 			state.should_quit = true
 		}
+		if rl.IsKeyPressed(rl.KeyboardKey.EIGHT) do game_font_toggle()
 		if rl.IsKeyPressed(rl.KeyboardKey.NINE) do game_cycle_theme(&state)
 
 		ctx := render_context_new(

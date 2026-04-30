@@ -138,7 +138,6 @@ game_data_hot_reload :: proc(watcher: ^GameDataWatcher, state: ^GameState) -> (r
 
 	game_data = next
 	rl.SetTargetFPS(game_data.screen.target_fps)
-	game_font_unload()
 	game_font_load()
 	game_apply_data_reload(state)
 	fmt.eprintf("game_data: reloaded %s\n", watcher.path)

@@ -6,6 +6,8 @@ import rl "vendor:raylib"
 TEXT_SPACING :: f32(1)
 
 game_font: rl.Font
+game_custom_font: rl.Font
+game_font_uses_custom: bool
 
 RenderCommandKind :: enum {
 	Rect,
@@ -98,14 +100,55 @@ render_context_new :: proc(
 	}
 }
 
+game_font_use_default :: proc() {
+	game_font = rl.GetFontDefault()
+	game_font_uses_custom = false
+}
+
 game_font_load :: proc() {
-	game_font = rl.LoadFont(game_data.screen.font_path)
+	if rl.IsFontValid(game_custom_font) {
+		rl.UnloadFont(game_custom_font)
+	}
+
+	game_custom_font = rl.LoadFont(game_data.screen.font_path)
+	if !rl.IsFontValid(game_custom_font) {
+		fmt.eprintf("font: failed to load %s, keeping default font\n", game_data.screen.font_path)
+		game_custom_font = {}
+		game_font_use_default()
+		return
+	}
+
+	if game_font_uses_custom {
+		game_font = game_custom_font
+	}
+}
+
+game_font_use_custom :: proc() {
+	if !rl.IsFontValid(game_custom_font) {
+		game_font_load()
+	}
+	if rl.IsFontValid(game_custom_font) {
+		game_font = game_custom_font
+		game_font_uses_custom = true
+		return
+	}
+	game_font_use_default()
+}
+
+game_font_toggle :: proc() {
+	if game_font_uses_custom {
+		game_font_use_default()
+	} else {
+		game_font_use_custom()
+	}
 }
 
 game_font_unload :: proc() {
-	if rl.IsFontValid(game_font) {
-		rl.UnloadFont(game_font)
+	if rl.IsFontValid(game_custom_font) {
+		rl.UnloadFont(game_custom_font)
 	}
+	game_custom_font = {}
+	game_font_use_default()
 }
 
 measure_text_width :: proc(label: cstring, font_size: i32) -> i32 {
