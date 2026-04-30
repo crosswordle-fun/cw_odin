@@ -11,6 +11,7 @@ game_font_uses_custom: bool
 
 RenderCommandKind :: enum {
 	Rect,
+	Rect_Rotated,
 	Rect_Lines,
 	Rect_Gradient_V,
 	Circle,
@@ -38,7 +39,8 @@ RenderCommand :: struct {
 }
 
 RenderBuffer :: struct {
-	commands: [dynamic]RenderCommand,
+	commands:         [dynamic]RenderCommand,
+	background_count: int,
 }
 
 RenderFrame :: struct {
@@ -158,9 +160,13 @@ measure_text_width :: proc(label: cstring, font_size: i32) -> i32 {
 
 render_frame_clear :: proc(frame: ^RenderFrame) {
 	clear(&frame.world.commands)
+	frame.world.background_count = 0
 	clear(&frame.ui.commands)
+	frame.ui.background_count = 0
 	clear(&frame.fixed_ui.commands)
+	frame.fixed_ui.background_count = 0
 	clear(&frame.overlay.commands)
+	frame.overlay.background_count = 0
 }
 
 push_rect :: proc(
@@ -176,6 +182,26 @@ push_rect :: proc(
 		RenderCommand {
 			kind = .Rect,
 			rect = rl.Rectangle{f32(x), f32(y), f32(width), f32(height)},
+			color = color,
+		},
+	)
+}
+
+push_rotated_rect :: proc(
+	buffer: ^RenderBuffer,
+	center_x: f32,
+	center_y: f32,
+	width: i32,
+	height: i32,
+	rotation: f32,
+	color: rl.Color,
+) {
+	append(
+		&buffer.commands,
+		RenderCommand {
+			kind = .Rect_Rotated,
+			rect = rl.Rectangle{center_x, center_y, f32(width), f32(height)},
+			rotation = rotation,
 			color = color,
 		},
 	)
@@ -350,6 +376,30 @@ push_rotated_text :: proc(
 	)
 }
 
+push_rotated_centered_text :: proc(
+	buffer: ^RenderBuffer,
+	label: cstring,
+	center_x: f32,
+	center_y: f32,
+	font_size: i32,
+	rotation: f32,
+	color: rl.Color,
+) {
+	text_width := measure_text_width(label, font_size)
+	append(
+		&buffer.commands,
+		RenderCommand {
+			kind = .Text_Rotated,
+			text = label,
+			rect = rl.Rectangle{center_x, center_y, 0, 0},
+			point = rl.Vector2{f32(text_width) * 0.5, f32(font_size) * 0.5},
+			font_size = font_size,
+			rotation = rotation,
+			color = color,
+		},
+	)
+}
+
 push_centered_text :: proc(
 	buffer: ^RenderBuffer,
 	label: cstring,
@@ -408,15 +458,19 @@ push_letter_tile :: proc(
 	}
 }
 
-flush_render_buffer_offset_from :: proc(
+flush_render_buffer_offset_range :: proc(
 	buffer: RenderBuffer,
 	offset: rl.Vector2,
 	start_index: int,
+	end_index: int,
 ) {
 	start := start_index
 	if start < 0 do start = 0
 	if start > len(buffer.commands) do start = len(buffer.commands)
-	for i in start ..< len(buffer.commands) {
+	end := end_index
+	if end < start do end = start
+	if end > len(buffer.commands) do end = len(buffer.commands)
+	for i in start ..< end {
 		command := buffer.commands[i]
 		if command.additive {
 			rl.BeginBlendMode(.ADDITIVE)
@@ -428,6 +482,16 @@ flush_render_buffer_offset_from :: proc(
 				i32(command.rect.y + offset.y),
 				i32(command.rect.width),
 				i32(command.rect.height),
+				command.color,
+			)
+		case .Rect_Rotated:
+			rect := command.rect
+			rect.x += offset.x
+			rect.y += offset.y
+			rl.DrawRectanglePro(
+				rect,
+				rl.Vector2{command.rect.width * 0.5, command.rect.height * 0.5},
+				command.rotation,
 				command.color,
 			)
 		case .Rect_Lines:
@@ -483,7 +547,7 @@ flush_render_buffer_offset_from :: proc(
 				game_font,
 				command.text,
 				rl.Vector2{command.rect.x + offset.x, command.rect.y + offset.y},
-				rl.Vector2{0, 0},
+				command.point,
 				command.rotation,
 				f32(command.font_size),
 				1,
@@ -494,6 +558,22 @@ flush_render_buffer_offset_from :: proc(
 			rl.EndBlendMode()
 		}
 	}
+}
+
+flush_render_buffer_offset_from :: proc(
+	buffer: RenderBuffer,
+	offset: rl.Vector2,
+	start_index: int,
+) {
+	flush_render_buffer_offset_range(buffer, offset, start_index, len(buffer.commands))
+}
+
+flush_render_buffer_offset_until :: proc(
+	buffer: RenderBuffer,
+	offset: rl.Vector2,
+	end_index: int,
+) {
+	flush_render_buffer_offset_range(buffer, offset, 0, end_index)
 }
 
 flush_render_buffer_offset :: proc(buffer: RenderBuffer, offset: rl.Vector2) {
@@ -518,7 +598,7 @@ flush_render_frame_moving_offset :: proc(frame: RenderFrame, offset: rl.Vector2)
 }
 
 flush_render_frame_moving_offset_skip_background :: proc(frame: RenderFrame, offset: rl.Vector2) {
-	flush_render_buffer_offset_from(frame.world, offset, 1)
+	flush_render_buffer_offset_from(frame.world, offset, frame.world.background_count)
 	flush_render_buffer_offset(frame.ui, offset)
 	flush_render_buffer_offset(frame.overlay, offset)
 }

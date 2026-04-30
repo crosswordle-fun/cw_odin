@@ -44,6 +44,130 @@ build_centered_text_in_rect :: proc(
 
 build_cozy_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
 	push_rect(buffer, 0, 0, ctx.screen_width, ctx.screen_height, ctx.theme.background)
+	build_theme_tile_background(buffer, ctx)
+	buffer.background_count = len(buffer.commands)
+}
+
+background_tile_color :: proc(theme: Theme, index: i32) -> rl.Color {
+	switch index % 6 {
+	case 0:
+		return theme.wordle_correct
+	case 1:
+		return theme.wordle_present
+	case 2:
+		return theme.wordle_miss
+	case 3:
+		return theme.wordle_empty
+	case 4:
+		return theme.highlight_fragment
+	case 5:
+		return theme.highlight_rune
+	}
+	return theme.wordle_empty
+}
+
+background_tile_shadow_color :: proc(theme: Theme, index: i32) -> rl.Color {
+	switch index % 6 {
+	case 4:
+		return theme.highlight_fragment_shadow
+	case 5:
+		return theme.highlight_rune_shadow
+	}
+
+	color := background_tile_color(theme, index)
+	return rl.Color {
+		u8(f32(color[0]) * 0.72),
+		u8(f32(color[1]) * 0.72),
+		u8(f32(color[2]) * 0.72),
+		color[3],
+	}
+}
+
+build_background_letter_tile :: proc(
+	buffer: ^RenderBuffer,
+	center_x: f32,
+	center_y: f32,
+	size: i32,
+	letter: rune,
+	face_color: rl.Color,
+	base_color: rl.Color,
+	font_size: i32,
+	theme: Theme,
+) {
+	rotation := f32(45)
+	base_height := grid_tile_base_height(size)
+	base_offset := f32(size / 2 + base_height / 2)
+
+	push_rotated_rect(
+		buffer,
+		center_x,
+		center_y + base_offset,
+		size,
+		base_height,
+		rotation,
+		with_alpha(base_color, 78),
+	)
+	push_rotated_rect(
+		buffer,
+		center_x,
+		center_y,
+		size,
+		size,
+		rotation,
+		with_alpha(face_color, 104),
+	)
+
+	if letter != 0 {
+		label := fmt.caprintf("%c", letter)
+		push_rotated_centered_text(
+			buffer,
+			label,
+			center_x,
+			center_y,
+			font_size,
+			rotation,
+			with_alpha(theme.text, 58),
+		)
+	}
+}
+
+build_theme_tile_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
+	tile_size := scaled_i32(42, ctx.scale)
+	tile_gap := scaled_i32(38, ctx.scale)
+	step := tile_size + tile_gap
+	if step < 1 do return
+
+	margin := scaled_i32(160, ctx.scale)
+	scroll := rl.Wrap(ctx.time * f32(step) * 0.22, 0, f32(step))
+	cols := (ctx.screen_width + margin * 2) / step + 5
+	rows := (ctx.screen_height + margin * 2) / step + 5
+	font_size := scaled_i32(24, ctx.scale)
+
+	for row in 0 ..< rows {
+		row_offset := f32(0)
+		if row % 2 != 0 do row_offset = f32(step) * 0.5
+
+		for col in 0 ..< cols {
+			pattern_index := row * cols + col
+			x := f32(col * step - margin) + row_offset + scroll
+			y := f32(row * step - margin) + scroll
+			letter: rune = 0
+			if len(game_data.grid.alphabet) > 0 {
+				letter = game_data.grid.alphabet[int(pattern_index) % len(game_data.grid.alphabet)]
+			}
+			build_background_letter_tile(
+				buffer,
+				x,
+				y,
+				tile_size,
+				letter,
+				background_tile_color(ctx.theme, pattern_index),
+				background_tile_shadow_color(ctx.theme, pattern_index),
+				font_size,
+				ctx.theme,
+			)
+		}
+	}
 }
 
 build_tile :: proc(

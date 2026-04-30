@@ -161,6 +161,11 @@ main :: proc() {
 			)
 			if gameplay_view_index(state.ui.previous_view) >= 0 &&
 			   gameplay_view_index(state.view) >= 0 {
+				flush_render_buffer_offset_until(
+					render_frame.world,
+					rl.Vector2{0, 0},
+					render_frame.world.background_count,
+				)
 				flush_render_frame_moving_offset_skip_background(previous_frame, previous_offset)
 				flush_render_frame_moving_offset_skip_background(render_frame, current_offset)
 				flush_render_buffer(render_frame.fixed_ui)
