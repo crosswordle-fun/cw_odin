@@ -158,21 +158,12 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme
 			}
 		}
 		color_age := elapsed - f32(i) * title_stagger
-		face_color := menu_title_cycle_color(
-			theme.surface,
+		color := menu_title_cycle_color(
+			theme.base,
 			TAILWIND_YELLOW_400,
 			TAILWIND_GREEN_400,
 			TAILWIND_BLUE_400,
 			TAILWIND_PURPLE_400,
-			color_age,
-			rebounce_period,
-		)
-		base_color := menu_title_cycle_color(
-			theme.surface_shadow,
-			TAILWIND_YELLOW_600,
-			TAILWIND_GREEN_600,
-			TAILWIND_BLUE_600,
-			TAILWIND_PURPLE_600,
 			color_age,
 			rebounce_period,
 		)
@@ -183,8 +174,8 @@ build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme
 				y = layout.title_y + i32(bounce),
 				face_size = layout.title_face_size,
 				letter = rune(title_label[i]),
-				face_color = face_color,
-				base_color = base_color,
+				face_color = theme_face_color(color),
+				base_color = theme_base_color(color),
 				font_size = layout.title_font_size,
 				text_color = theme.text,
 				outline = theme.outline,

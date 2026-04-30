@@ -226,14 +226,14 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 							burst_x = f32(tile_x + state.grid.cell_size / 2)
 							burst_y = f32(tile_y + state.grid.cell_size / 2)
 						}
-						reward_color := state.theme.highlight_fragment
-						if !state.show_frags do reward_color = state.theme.highlight_rune
+						reward_color := state.theme.frag
+						if !state.show_frags do reward_color = state.theme.rune
 						ui_note_exp_reward(
 							&state.ui,
 							state.cross_reward_exp,
 							burst_x,
 							burst_y,
-							state.theme.exp,
+							state.theme.text,
 						)
 						ui_spawn_burst(&state.ui, burst_x, burst_y, reward_color, 10)
 					}

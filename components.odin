@@ -59,7 +59,14 @@ build_text_badge :: proc(
 	badge_y := y - padding_y
 	badge_w := text_width + padding_x * 2
 	badge_h := font_size + padding_y * 2
-	push_rect(buffer, badge_x, badge_y, badge_w, badge_h, with_alpha(theme.surface, 236))
+	push_rect(
+		buffer,
+		badge_x,
+		badge_y,
+		badge_w,
+		badge_h,
+		with_alpha(theme_face_color(theme.base), 236),
+	)
 	push_rect_lines(buffer, badge_x, badge_y, badge_w, badge_h, 2, theme.outline)
 	build_text(buffer, label, x, y, font_size, color)
 }
@@ -98,38 +105,19 @@ background_tile_color :: proc(theme: Theme, index: i32) -> rl.Color {
 	if color_index < 0 do color_index += 6
 	switch color_index {
 	case 0:
-		return theme.wordle_correct
+		return theme.correct
 	case 1:
-		return theme.wordle_present
+		return theme.present
 	case 2:
-		return theme.wordle_miss
+		return theme.absent
 	case 3:
-		return theme.wordle_empty
+		return theme.base
 	case 4:
-		return theme.highlight_fragment
+		return theme.frag
 	case 5:
-		return theme.highlight_rune
+		return theme.rune
 	}
-	return theme.wordle_empty
-}
-
-background_tile_shadow_color :: proc(theme: Theme, index: i32) -> rl.Color {
-	color_index := index % 6
-	if color_index < 0 do color_index += 6
-	switch color_index {
-	case 4:
-		return theme.highlight_fragment_shadow
-	case 5:
-		return theme.highlight_rune_shadow
-	}
-
-	color := background_tile_color(theme, index)
-	return rl.Color {
-		u8(f32(color[0]) * 0.72),
-		u8(f32(color[1]) * 0.72),
-		u8(f32(color[2]) * 0.72),
-		color[3],
-	}
+	return theme.base
 }
 
 build_background_letter_tile :: proc(
@@ -306,8 +294,8 @@ build_theme_tile_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
 				y,
 				tile_size,
 				letter,
-				background_tile_color(ctx.theme, tile_index),
-				background_tile_shadow_color(ctx.theme, tile_index),
+				theme_face_color(background_tile_color(ctx.theme, tile_index)),
+				theme_base_color(background_tile_color(ctx.theme, tile_index)),
 				font_size,
 				ctx.theme,
 			)
@@ -339,20 +327,14 @@ build_tile_with_face_lift :: proc(
 	theme: Theme,
 	face_lift: i32,
 ) {
-	base_color := rl.Color {
-		u8(f32(color[0]) * 0.72),
-		u8(f32(color[1]) * 0.72),
-		u8(f32(color[2]) * 0.72),
-		color[3],
-	}
 	build_layered_tile_with_face_lift(
 		buffer,
 		x,
 		y - grid_tile_base_height(size),
 		size,
 		letter,
-		color,
-		base_color,
+		theme_face_color(color),
+		theme_base_color(color),
 		font_size,
 		theme.text,
 		theme.outline,
@@ -400,20 +382,14 @@ build_tile_scaled :: proc(
 	if draw_size < 1 do draw_size = 1
 	draw_x := x + (size - draw_size) / 2
 	draw_y := y + (size - draw_size) / 2
-	base_color := rl.Color {
-		u8(f32(color[0]) * 0.72),
-		u8(f32(color[1]) * 0.72),
-		u8(f32(color[2]) * 0.72),
-		color[3],
-	}
 	build_layered_tile(
 		buffer,
 		draw_x,
 		draw_y - grid_tile_base_height(draw_size),
 		draw_size,
 		letter,
-		color,
-		base_color,
+		theme_face_color(color),
+		theme_base_color(color),
 		font_size,
 		theme.text,
 		theme.outline,
@@ -436,7 +412,7 @@ build_tile_or_square :: proc(
 		return
 	}
 
-	push_rect(buffer, x, y, size, size, empty_color)
+	push_rect(buffer, x, y, size, size, theme_face_color(empty_color))
 	push_rect_lines(buffer, x, y, size, size, 2, theme.outline)
 }
 
@@ -590,19 +566,19 @@ build_button :: proc(
 	lift: i32 = 0
 	if !active do lift = height / 12
 	shadow_y := y + height / 9
-	push_rect(buffer, x, shadow_y, width, height, with_alpha(theme.button_shadow, 116))
+	push_rect(buffer, x, shadow_y, width, height, with_alpha(theme.base, 116))
 
-	fill := theme.surface
+	fill := theme_face_color(theme.base)
 	if active {
-		fill = theme.button_fill
+		fill = theme_face_color(theme.outline)
 	}
 	push_rect(buffer, x, y - lift, width, height, fill)
 	outline_y := y - lift
 	outline_height := shadow_y + height - outline_y
 	push_rect_lines(buffer, x, outline_y, width, outline_height, 2, theme.outline)
 
-	text_color := theme.button_text
-	if active do text_color = theme.button_text_inverted
+	text_color := theme.text
+	if active do text_color = theme.text_alt
 
 	build_centered_text_in_rect(buffer, label, x, y - lift, width, height, font_size, text_color)
 }
@@ -688,8 +664,8 @@ build_mode_tabs :: proc(buffer: ^RenderBuffer, ctx: RenderContext, view: GameVie
 build_gameplay_fixed_ui :: proc(buffer: ^RenderBuffer, ctx: RenderContext, state: ^GameState) {
 	build_mode_tabs(buffer, ctx, state.view)
 	build_exp_hud(buffer, ctx, state.exp, state.ui)
-	build_inventory_counts(buffer, ctx, state.frag_counts, ctx.theme.highlight_fragment, true)
-	build_inventory_counts(buffer, ctx, state.rune_counts, ctx.theme.highlight_rune, false)
+	build_inventory_counts(buffer, ctx, state.frag_counts, ctx.theme.frag, true)
+	build_inventory_counts(buffer, ctx, state.rune_counts, ctx.theme.rune, false)
 }
 
 build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: UiState) {
@@ -704,14 +680,14 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: U
 	}
 	badge_w := scaled_i32(game_data.hud.exp_badge_width, ctx.scale) + i32(pulse * 5)
 	badge_h := scaled_i32(game_data.hud.exp_badge_height, ctx.scale) + i32(pulse * 3)
-	push_rect(buffer, x, y, badge_w, badge_h, with_alpha(ctx.theme.surface, 236))
+	push_rect(buffer, x, y, badge_w, badge_h, with_alpha(theme_face_color(ctx.theme.base), 236))
 	push_rect_lines(buffer, x, y, badge_w, badge_h, 2, ctx.theme.outline)
 	push_circle(
 		buffer,
 		f32(x + scaled_i32(game_data.hud.exp_icon_x, ctx.scale)),
 		f32(y + badge_h / 2),
 		f32(scaled_i32(9, ctx.scale)),
-		with_alpha(ctx.theme.exp, 220),
+		with_alpha(ctx.theme.text, 220),
 	)
 	label := fmt.caprintf("%s %d", game_data.hud.exp_label_prefix, exp)
 	build_text(
@@ -720,7 +696,7 @@ build_exp_hud :: proc(buffer: ^RenderBuffer, ctx: RenderContext, exp: u32, ui: U
 		x + scaled_i32(game_data.hud.exp_text_x, ctx.scale),
 		y + (badge_h - font_size) / 2,
 		font_size,
-		ctx.theme.exp,
+		ctx.theme.text,
 	)
 }
 
@@ -768,16 +744,10 @@ build_inventory_count_tile :: proc(
 	face_color := color
 	text_color := theme.text
 	if count == 0 {
-		face_color = theme.empty_tile
-		text_color = theme.text_muted
+		face_color = theme.base
+		text_color = theme.text_alt
 	}
 
-	base_color := rl.Color {
-		u8(f32(face_color[0]) * 0.72),
-		u8(f32(face_color[1]) * 0.72),
-		u8(f32(face_color[2]) * 0.72),
-		face_color[3],
-	}
 	letter_font_size := scaled_i32(22, scale)
 	count_font_size := scaled_i32(12, scale)
 	build_title_tile(
@@ -787,8 +757,8 @@ build_inventory_count_tile :: proc(
 			y = y,
 			face_size = size,
 			letter = letter,
-			face_color = face_color,
-			base_color = base_color,
+			face_color = theme_face_color(face_color),
+			base_color = theme_base_color(face_color),
 			font_size = letter_font_size,
 			text_color = text_color,
 			outline = theme.outline,
@@ -833,7 +803,7 @@ build_inventory_counts :: proc(
 		start_y - panel_pad_y + scaled_i32(5, ctx.scale),
 		hud_width + panel_pad_x * 2,
 		hud_height + panel_pad_y * 2,
-		with_alpha(ctx.theme.surface_shadow, 82),
+		with_alpha(ctx.theme.base, 82),
 	)
 	push_rect(
 		buffer,
@@ -841,7 +811,7 @@ build_inventory_counts :: proc(
 		start_y - panel_pad_y,
 		hud_width + panel_pad_x * 2,
 		hud_height + panel_pad_y * 2,
-		with_alpha(ctx.theme.surface, 226),
+		with_alpha(theme_face_color(ctx.theme.base), 226),
 	)
 	push_rect_lines(
 		buffer,
@@ -945,7 +915,7 @@ build_crossword_grid :: proc(
 				y,
 				grid.cell_size,
 				grid.runes[i],
-				theme.highlight_rune,
+				theme.rune,
 				font_size,
 				theme,
 				pop_scale,
@@ -957,14 +927,21 @@ build_crossword_grid :: proc(
 				y,
 				grid.cell_size,
 				grid.frags[i],
-				theme.highlight_fragment,
+				theme.frag,
 				font_size,
 				theme,
 				pop_scale,
 			)
 		} else {
 			if !covered_by_selector {
-				push_rect(buffer, x, y, grid.cell_size, grid.cell_size, theme.empty_tile)
+				push_rect(
+					buffer,
+					x,
+					y,
+					grid.cell_size,
+					grid.cell_size,
+					theme_face_color(theme.base),
+				)
 				push_rect_lines(buffer, x, y, grid.cell_size, grid.cell_size, 2, theme.outline)
 			}
 		}
@@ -981,10 +958,8 @@ build_crossword_selector_overlay :: proc(
 	theme: Theme,
 	ui: UiState,
 ) {
-	selector_color := theme.highlight_fragment
-	selector_shadow := theme.highlight_fragment_shadow
-	if !show_frags do selector_color = theme.highlight_rune
-	if !show_frags do selector_shadow = theme.highlight_rune_shadow
+	selector_color := theme.frag
+	if !show_frags do selector_color = theme.rune
 
 	scale := f32(grid.cell_size) / f32(game_data.grid.cell_size)
 	font_size := scaled_i32(game_data.fonts.selector, scale)
@@ -997,11 +972,11 @@ build_crossword_selector_overlay :: proc(
 	preview_outline := theme.outline
 	if selector_buffer.count == 0 && grid_tile_visible(grid, selector.row, selector.col) {
 		x, y := grid_tile_position(grid, selector.row, selector.col)
-		preview_face := selector_color
-		preview_base := selector_shadow
+		preview_face := theme_face_color(selector_color)
+		preview_base := theme_base_color(selector_color)
 		if grid_tile_has_cross_letter(grid, selector.row, selector.col) {
-			preview_face = with_alpha(selector_color, selector_alpha)
-			preview_base = with_alpha(selector_shadow, selector_alpha)
+			preview_face = with_alpha(preview_face, selector_alpha)
+			preview_base = with_alpha(preview_base, selector_alpha)
 		}
 		build_layered_tile(
 			buffer,
@@ -1047,11 +1022,11 @@ build_crossword_selector_overlay :: proc(
 		}
 		preview_x := tile_x + selector_offset_x + turn_offset_x
 		preview_y := tile_y + selector_offset_y + turn_offset_y
-		preview_face := selector_color
-		preview_base := selector_shadow
+		preview_face := theme_face_color(selector_color)
+		preview_base := theme_base_color(selector_color)
 		if grid_tile_has_cross_letter(grid, row, col) {
-			preview_face = with_alpha(selector_color, selector_alpha)
-			preview_base = with_alpha(selector_shadow, selector_alpha)
+			preview_face = with_alpha(preview_face, selector_alpha)
+			preview_base = with_alpha(preview_base, selector_alpha)
 		}
 		build_layered_tile_with_corner_letter(
 			buffer,
@@ -1072,15 +1047,15 @@ build_crossword_selector_overlay :: proc(
 wordle_feedback_color :: proc(feedback: WordleFeedback, theme: Theme) -> rl.Color {
 	switch feedback {
 	case .Correct:
-		return theme.wordle_correct
+		return theme.correct
 	case .Present:
-		return theme.wordle_present
+		return theme.present
 	case .Miss:
-		return theme.wordle_miss
+		return theme.absent
 	case .Empty:
-		return theme.wordle_empty
+		return theme.base
 	}
-	return theme.wordle_empty
+	return theme.base
 }
 
 build_wordle_guess_row :: proc(
@@ -1102,7 +1077,7 @@ build_wordle_guess_row :: proc(
 		if ui.wordle_reveal_guess_row == row_index {
 			lift := grid_tile_base_height(cell_size)
 			face_lift = wordle_submit_click_lift(ui.wordle_reveal_age, lift)
-			if face_lift < 0 do color = theme.wordle_empty
+			if face_lift < 0 do color = theme.base
 		}
 		build_tile_with_face_lift(
 			buffer,
@@ -1141,7 +1116,7 @@ build_wordle_current_row :: proc(
 				y,
 				cell_size,
 				current_guess[col],
-				theme.wordle_empty,
+				theme.base,
 				font_size,
 				theme,
 				lift,
@@ -1153,8 +1128,8 @@ build_wordle_current_row :: proc(
 				y,
 				cell_size,
 				current_guess[col],
-				theme.wordle_empty,
-				theme.wordle_empty,
+				theme.base,
+				theme.base,
 				font_size,
 				theme,
 			)
@@ -1293,7 +1268,7 @@ build_wordle_history_board :: proc(
 		reward_y,
 		history_reward_size,
 		record.reward_fragment,
-		ctx.theme.highlight_fragment,
+		ctx.theme.frag,
 		history_reward_font_size,
 		ctx.theme,
 	)
@@ -1348,7 +1323,7 @@ build_wordle_won_panel :: proc(
 			start_y,
 			cell_size,
 			wordle.win_solution[col],
-			ctx.theme.wordle_correct,
+			ctx.theme.correct,
 			font_size,
 			ctx.theme,
 		)
@@ -1372,7 +1347,7 @@ build_wordle_won_panel :: proc(
 		reward_y,
 		cell_size,
 		wordle.reward_fragment,
-		ctx.theme.highlight_fragment,
+		ctx.theme.frag,
 		font_size,
 		ctx.theme,
 		reward_scale,
@@ -1466,8 +1441,8 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 	for i in 0 ..< game_data.crafting.selection_capacity {
 		tile_x := start_x + i32(i) * (cell_size + gap) + selection_shake
 		letter := state.crafting.selected[i]
-		color := ctx.theme.highlight_fragment
-		if i32(i) >= state.crafting.count do color = ctx.theme.empty_tile
+		color := ctx.theme.frag
+		if i32(i) >= state.crafting.count do color = ctx.theme.base
 		if letter != 0 {
 			lift := tile_click_lift(ctx.time, grid_tile_base_height(cell_size), i32(i))
 			build_tile_with_face_lift(
@@ -1489,7 +1464,7 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 				cell_size,
 				letter,
 				color,
-				ctx.theme.empty_tile,
+				ctx.theme.base,
 				font_size,
 				ctx.theme,
 			)
@@ -1529,7 +1504,7 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 			output_y,
 			cell_size,
 			state.crafting.crafted_rune,
-			ctx.theme.highlight_rune,
+			ctx.theme.rune,
 			font_size,
 			ctx.theme,
 			rune_scale,
@@ -1541,8 +1516,8 @@ build_crafting_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 			output_y,
 			cell_size,
 			state.crafting.crafted_rune,
-			ctx.theme.highlight_rune,
-			ctx.theme.empty_tile,
+			ctx.theme.rune,
+			ctx.theme.base,
 			font_size,
 			ctx.theme,
 		)
@@ -1597,7 +1572,7 @@ build_cross_mode_view :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^G
 			state.screen_width,
 			reward_y,
 			scaled_i32(game_data.fonts.hud, ctx.scale),
-			ctx.theme.exp,
+			ctx.theme.text,
 		)
 	}
 

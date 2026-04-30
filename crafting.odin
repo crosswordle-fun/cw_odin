@@ -60,13 +60,13 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 					game_data.crafting.exp_reward,
 					f32(state.screen_width / 2),
 					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
-					state.theme.exp,
+					state.theme.text,
 				)
 				ui_spawn_burst(
 					&state.ui,
 					f32(state.screen_width / 2),
 					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
-					state.theme.highlight_rune,
+					state.theme.rune,
 					game_data.crafting.reward_burst_count,
 				)
 				crafting_clear_selection(&state.crafting)
@@ -96,13 +96,13 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 					game_data.crafting.exp_reward,
 					f32(state.screen_width / 2),
 					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
-					state.theme.exp,
+					state.theme.text,
 				)
 				ui_spawn_burst(
 					&state.ui,
 					f32(state.screen_width / 2),
 					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
-					state.theme.highlight_rune,
+					state.theme.rune,
 					game_data.crafting.reward_burst_count,
 				)
 				crafting_clear_selection(&state.crafting)

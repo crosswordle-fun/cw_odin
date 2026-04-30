@@ -197,7 +197,7 @@ main :: proc() {
 		dest := rl.Rectangle{dst_x, dst_y, dst_w, dst_h}
 
 		rl.BeginDrawing()
-		rl.ClearBackground(ctx.theme.canvas)
+		rl.ClearBackground(ctx.theme.background)
 		rl.DrawTexturePro(render_target.texture, source, dest, rl.Vector2{0, 0}, 0, rl.WHITE)
 		rl.EndDrawing()
 	}

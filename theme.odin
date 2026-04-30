@@ -3,26 +3,23 @@ package main
 import rl "vendor:raylib"
 
 Theme :: struct {
-	background:                rl.Color,
-	canvas:                    rl.Color,
-	text:                      rl.Color,
-	text_inverted:             rl.Color,
-	text_muted:                rl.Color,
-	outline:                   rl.Color,
-	surface:                   rl.Color,
-	surface_shadow:            rl.Color,
-	empty_tile:                rl.Color,
-	highlight_fragment:        rl.Color,
-	highlight_fragment_shadow: rl.Color,
-	highlight_rune:            rl.Color,
-	highlight_rune_shadow:     rl.Color,
-	exp:                       rl.Color,
-	wordle_correct:            rl.Color,
-	wordle_present:            rl.Color,
-	wordle_miss:               rl.Color,
-	wordle_empty:              rl.Color,
-	button_fill:               rl.Color,
-	button_shadow:             rl.Color,
-	button_text:               rl.Color,
-	button_text_inverted:      rl.Color,
+	text:       rl.Color,
+	text_alt:   rl.Color,
+	background: rl.Color,
+	base:       rl.Color,
+	outline:    rl.Color,
+	absent:     rl.Color,
+	present:    rl.Color,
+	correct:    rl.Color,
+	frag:       rl.Color,
+	rune:       rl.Color,
+}
+
+theme_base_color :: proc(color: rl.Color) -> rl.Color {
+	return color
+}
+
+theme_face_color :: proc(color: rl.Color) -> rl.Color {
+	alpha := (u16(color[3]) * 4 + 2) / 5
+	return rl.Color{color[0], color[1], color[2], u8(alpha)}
 }

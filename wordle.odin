@@ -135,13 +135,13 @@ wordle_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameS
 						state.wordle.reward_exp,
 						f32(state.screen_width / 2),
 						f32(scaled_i32(game_data.wordle.reward_exp_y, ctx.scale)),
-						state.theme.exp,
+						state.theme.text,
 					)
 					ui_spawn_burst(
 						&state.ui,
 						f32(state.screen_width / 2),
 						f32(scaled_i32(game_data.wordle.reward_exp_y, ctx.scale)),
-						state.theme.wordle_correct,
+						state.theme.correct,
 						game_data.wordle.reward_burst_count,
 					)
 					state.wordle.substate = .Won
