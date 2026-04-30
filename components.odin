@@ -888,6 +888,14 @@ build_crossword_coord_label :: proc(
 	build_text(buffer, label, x + padding, y + padding, font_size, with_alpha(theme.text, 180))
 }
 
+grid_tile_has_cross_letter :: proc(grid: Grid, row: i32, col: i32) -> bool {
+	tile_index := grid_tile_index(grid, row, col)
+	if tile_index < 0 || tile_index >= i32(len(grid.frags)) || tile_index >= i32(len(grid.runes)) {
+		return false
+	}
+	return grid.frags[tile_index] != 0 || grid.runes[tile_index] != 0
+}
+
 build_crossword_grid :: proc(
 	buffer: ^RenderBuffer,
 	grid: Grid,
@@ -968,11 +976,15 @@ build_crossword_selector_overlay :: proc(
 	selector_alpha: u8 = 100
 
 	shake := ui_invalid_shake_x(ui, f32(grid.cell_size) * 0.12)
-	preview_face := with_alpha(selector_color, selector_alpha)
-	preview_base := with_alpha(selector_shadow, selector_alpha)
 	preview_outline := theme.outline
 	if selector_buffer.count == 0 && grid_tile_visible(grid, selector.row, selector.col) {
 		x, y := grid_tile_position(grid, selector.row, selector.col)
+		preview_face := selector_color
+		preview_base := selector_shadow
+		if grid_tile_has_cross_letter(grid, selector.row, selector.col) {
+			preview_face = with_alpha(selector_color, selector_alpha)
+			preview_base = with_alpha(selector_shadow, selector_alpha)
+		}
 		build_layered_tile(
 			buffer,
 			x + i32(shake),
@@ -994,6 +1006,12 @@ build_crossword_selector_overlay :: proc(
 
 		tile_x, tile_y := grid_tile_position(grid, row, col)
 		preview_x := tile_x + i32(shake)
+		preview_face := selector_color
+		preview_base := selector_shadow
+		if grid_tile_has_cross_letter(grid, row, col) {
+			preview_face = with_alpha(selector_color, selector_alpha)
+			preview_base = with_alpha(selector_shadow, selector_alpha)
+		}
 		build_layered_tile_with_corner_letter(
 			buffer,
 			preview_x,
