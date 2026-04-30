@@ -19,6 +19,7 @@ tile_row_step :: proc(cell_size: i32, gap: i32) -> i32 {
 CROSS_MOVE_REPEAT_DELAY :: f32(0.22)
 CROSS_MOVE_REPEAT_INTERVAL :: f32(0.08)
 CROSS_SELECTOR_MOVE_DURATION :: f32(0.20)
+CROSS_SELECTOR_TURN_DURATION :: f32(0.14)
 
 screen_scale :: proc(screen_width: i32, screen_height: i32) -> f32 {
 	scale_x := f32(screen_width) / f32(game_data.screen.virtual_width)
