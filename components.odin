@@ -49,7 +49,9 @@ build_cozy_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
 }
 
 background_tile_color :: proc(theme: Theme, index: i32) -> rl.Color {
-	switch index % 6 {
+	color_index := index % 6
+	if color_index < 0 do color_index += 6
+	switch color_index {
 	case 0:
 		return theme.wordle_correct
 	case 1:
@@ -67,7 +69,9 @@ background_tile_color :: proc(theme: Theme, index: i32) -> rl.Color {
 }
 
 background_tile_shadow_color :: proc(theme: Theme, index: i32) -> rl.Color {
-	switch index % 6 {
+	color_index := index % 6
+	if color_index < 0 do color_index += 6
+	switch color_index {
 	case 4:
 		return theme.highlight_fragment_shadow
 	case 5:
@@ -96,14 +100,21 @@ build_background_letter_tile :: proc(
 ) {
 	rotation := f32(45)
 	base_height := grid_tile_base_height(size)
-	base_offset := f32(size / 2 + base_height / 2)
+	base_overlap := i32(1)
+	base_draw_height := base_height + base_overlap
+	base_offset := rotate_offset(
+		0,
+		f32(size - base_overlap) + f32(base_draw_height) * 0.5 - f32(size) * 0.5,
+		rotation,
+	)
+	outline_offset := rotate_offset(0, f32(base_height) * 0.5, rotation)
 
 	push_rotated_rect(
 		buffer,
-		center_x,
-		center_y + base_offset,
+		center_x + base_offset.x,
+		center_y + base_offset.y,
 		size,
-		base_height,
+		base_draw_height,
 		rotation,
 		with_alpha(base_color, 78),
 	)
@@ -115,6 +126,16 @@ build_background_letter_tile :: proc(
 		size,
 		rotation,
 		with_alpha(face_color, 104),
+	)
+	push_rotated_rect_outline(
+		buffer,
+		center_x + outline_offset.x,
+		center_y + outline_offset.y,
+		size,
+		size + base_height,
+		rotation,
+		2,
+		with_alpha(theme.outline, 82),
 	)
 
 	if letter != 0 {
@@ -131,29 +152,110 @@ build_background_letter_tile :: proc(
 	}
 }
 
+rotate_offset :: proc(x: f32, y: f32, rotation: f32) -> rl.Vector2 {
+	radians := rotation * math.PI / 180.0
+	cos_r := math.cos(radians)
+	sin_r := math.sin(radians)
+	return rl.Vector2{x * cos_r - y * sin_r, x * sin_r + y * cos_r}
+}
+
+push_rotated_rect_outline :: proc(
+	buffer: ^RenderBuffer,
+	center_x: f32,
+	center_y: f32,
+	width: i32,
+	height: i32,
+	rotation: f32,
+	thickness: f32,
+	color: rl.Color,
+) {
+	half_w := f32(width) * 0.5
+	half_h := f32(height) * 0.5
+	top_left := rotate_offset(-half_w, -half_h, rotation)
+	top_right := rotate_offset(half_w, -half_h, rotation)
+	bottom_right := rotate_offset(half_w, half_h, rotation)
+	bottom_left := rotate_offset(-half_w, half_h, rotation)
+
+	push_line(
+		buffer,
+		center_x + top_left.x,
+		center_y + top_left.y,
+		center_x + top_right.x,
+		center_y + top_right.y,
+		thickness,
+		color,
+	)
+	push_line(
+		buffer,
+		center_x + top_right.x,
+		center_y + top_right.y,
+		center_x + bottom_right.x,
+		center_y + bottom_right.y,
+		thickness,
+		color,
+	)
+	push_line(
+		buffer,
+		center_x + bottom_right.x,
+		center_y + bottom_right.y,
+		center_x + bottom_left.x,
+		center_y + bottom_left.y,
+		thickness,
+		color,
+	)
+	push_line(
+		buffer,
+		center_x + bottom_left.x,
+		center_y + bottom_left.y,
+		center_x + top_left.x,
+		center_y + top_left.y,
+		thickness,
+		color,
+	)
+}
+
 build_theme_tile_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
-	tile_size := scaled_i32(42, ctx.scale)
-	tile_gap := scaled_i32(38, ctx.scale)
-	step := tile_size + tile_gap
-	if step < 1 do return
+	tile_size := scaled_i32(48, ctx.scale)
+	font_size := i32(
+		rl.Clamp(f32(tile_size) * game_data.menu.title_font_ratio, 1, f32(tile_size)),
+	)
+	tile_gap := scaled_i32(game_data.grid.gap, ctx.scale)
+	axis_step := tile_size + tile_gap
+	diagonal_step := f32(axis_step) * 0.70710678
+	lifetime := f32(18.0)
+	speed := f32(scaled_i32(64, ctx.scale))
+	spawn_interval := diagonal_step / speed
+	lane_count := (ctx.screen_width + ctx.screen_height) / axis_step + 8
+	spawn_count := i32(lifetime / spawn_interval) + 2
+	current_spawn := i32(ctx.time / spawn_interval)
+	margin := tile_size * 3
+	start_x := f32(-margin)
+	start_y := f32(-margin)
 
-	margin := scaled_i32(160, ctx.scale)
-	scroll := rl.Wrap(ctx.time * f32(step) * 0.22, 0, f32(step))
-	cols := (ctx.screen_width + margin * 2) / step + 5
-	rows := (ctx.screen_height + margin * 2) / step + 5
-	font_size := scaled_i32(24, ctx.scale)
+	for i in 0 ..< spawn_count {
+		spawn_index := current_spawn - i
+		spawn_time := f32(spawn_index) * spawn_interval
+		age := ctx.time - spawn_time
+		if age < 0 || age > lifetime do continue
 
-	for row in 0 ..< rows {
-		row_offset := f32(0)
-		if row % 2 != 0 do row_offset = f32(step) * 0.5
+		distance := age * speed
+		for lane in 0 ..< lane_count {
+			lane_offset := f32(lane - lane_count / 2) * diagonal_step
+			x := start_x + distance + lane_offset
+			y := start_y + distance - lane_offset
+			if x < f32(-margin) || x > f32(ctx.screen_width + margin) {
+				continue
+			}
+			if y < f32(-margin) || y > f32(ctx.screen_height + margin) {
+				continue
+			}
 
-		for col in 0 ..< cols {
-			pattern_index := row * cols + col
-			x := f32(col * step - margin) + row_offset + scroll
-			y := f32(row * step - margin) + scroll
+			tile_index := spawn_index + lane * 3
 			letter: rune = 0
 			if len(game_data.grid.alphabet) > 0 {
-				letter = game_data.grid.alphabet[int(pattern_index) % len(game_data.grid.alphabet)]
+				letter_index := tile_index % i32(len(game_data.grid.alphabet))
+				if letter_index < 0 do letter_index += i32(len(game_data.grid.alphabet))
+				letter = game_data.grid.alphabet[letter_index]
 			}
 			build_background_letter_tile(
 				buffer,
@@ -161,8 +263,8 @@ build_theme_tile_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
 				y,
 				tile_size,
 				letter,
-				background_tile_color(ctx.theme, pattern_index),
-				background_tile_shadow_color(ctx.theme, pattern_index),
+				background_tile_color(ctx.theme, tile_index),
+				background_tile_shadow_color(ctx.theme, tile_index),
 				font_size,
 				ctx.theme,
 			)
