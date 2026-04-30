@@ -215,15 +215,13 @@ push_rotated_rect_outline :: proc(
 }
 
 build_theme_tile_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
-	tile_size := scaled_i32(48, ctx.scale)
-	font_size := i32(
-		rl.Clamp(f32(tile_size) * game_data.menu.title_font_ratio, 1, f32(tile_size)),
-	)
-	tile_gap := scaled_i32(game_data.grid.gap, ctx.scale)
+	tile_size := scaled_i32(40, ctx.scale)
+	font_size := i32(rl.Clamp(f32(tile_size) * game_data.menu.title_font_ratio, 1, f32(tile_size)))
+	tile_gap := scaled_i32(game_data.grid.gap + 4, ctx.scale)
 	axis_step := tile_size + tile_gap
 	diagonal_step := f32(axis_step) * 0.70710678
-	lifetime := f32(18.0)
-	speed := f32(scaled_i32(64, ctx.scale))
+	lifetime := f32(120.0)
+	speed := f32(scaled_i32(24, ctx.scale))
 	spawn_interval := diagonal_step / speed
 	lane_count := (ctx.screen_width + ctx.screen_height) / axis_step + 8
 	spawn_count := i32(lifetime / spawn_interval) + 2

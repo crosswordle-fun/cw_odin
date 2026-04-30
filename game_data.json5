@@ -146,7 +146,8 @@
   themes: [
     // Default
     {
-      background: [243, 244, 246, 255],
+      background: [200, 200, 200, 255],
+      // background: [0, 0, 0, 255],
       canvas: [0, 0, 0, 255],
       text: [0, 0, 0, 255],
       text_inverted: [255, 255, 255, 255],
