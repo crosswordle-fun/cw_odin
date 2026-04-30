@@ -45,6 +45,14 @@ build_centered_text_in_rect :: proc(
 build_cozy_background :: proc(buffer: ^RenderBuffer, ctx: RenderContext) {
 	push_rect(buffer, 0, 0, ctx.screen_width, ctx.screen_height, ctx.theme.background)
 	build_theme_tile_background(buffer, ctx)
+	push_rect(
+		buffer,
+		0,
+		0,
+		ctx.screen_width,
+		ctx.screen_height,
+		with_alpha(ctx.theme.background, 50),
+	)
 	buffer.background_count = len(buffer.commands)
 }
 
