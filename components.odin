@@ -897,7 +897,7 @@ build_crossword_grid :: proc(
 		pop_key := tile.row * 100 + tile.col
 		pop_scale := ui_tile_pop_scale(ui, pop_key)
 		covered_by_selector := false
-		if !ui.selector_move_active && !ui.selector_turn_active {
+		if !ui.selector_move_active {
 			covered_by_selector = tile.row == selector.row && tile.col == selector.col
 			for preview_index in 0 ..< selector_buffer.count {
 				preview_row, preview_col := selector_letter_position(grid, selector, preview_index)
@@ -1006,22 +1006,8 @@ build_crossword_selector_overlay :: proc(
 		if !grid_tile_visible(grid, row, col) do continue
 
 		tile_x, tile_y := grid_tile_position(grid, row, col)
-		turn_offset_x, turn_offset_y := i32(0), i32(0)
-		if ui.selector_turn_active {
-			old_row := selector.row
-			old_col := selector.col
-			if ui.selector_turn_was_down {
-				old_row = grid_wrap_row(grid, old_row + i)
-			} else {
-				old_col = grid_wrap_col(grid, old_col + i)
-			}
-			old_x, old_y := grid_tile_position(grid, old_row, old_col)
-			turn_remaining := ui_selector_turn_remaining(ui)
-			turn_offset_x = i32(f32(old_x - tile_x) * turn_remaining)
-			turn_offset_y = i32(f32(old_y - tile_y) * turn_remaining)
-		}
-		preview_x := tile_x + selector_offset_x + turn_offset_x
-		preview_y := tile_y + selector_offset_y + turn_offset_y
+		preview_x := tile_x + selector_offset_x
+		preview_y := tile_y + selector_offset_y
 		preview_face := theme_face_color(selector_color)
 		preview_base := theme_base_color(selector_color)
 		if grid_tile_has_cross_letter(grid, row, col) {

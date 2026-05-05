@@ -34,14 +34,12 @@ cross_any_down_arrow :: proc() -> rl.KeyboardKey {
 }
 
 cross_move_selector :: proc(state: ^GameState, row_delta: i32, col_delta: i32) {
-	old_row := state.selector.row
-	old_col := state.selector.col
+	old_x, old_y := grid_tile_position(state.grid, state.selector.row, state.selector.col)
 	anim_x, anim_y := ui_selector_move_offset(state.ui)
 
 	selector_move(&state.selector, row_delta, col_delta, state.grid)
 	grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
 
-	old_x, old_y := grid_tile_position(state.grid, old_row, old_col)
 	new_x, new_y := grid_tile_position(state.grid, state.selector.row, state.selector.col)
 	ui_note_selector_move(
 		&state.ui,
@@ -97,10 +95,8 @@ cross_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^GameSt
 	cross_update_selector_movement(state, ctx.dt)
 
 	if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
-		was_down := state.selector.down
 		selector_toggle_direction(&state.selector)
 		grid_update_viewport(&state.grid, state.selector, state.selector_buffer.count)
-		ui_note_selector_turn(&state.ui, was_down)
 	}
 
 	if rl.IsKeyPressed(rl.KeyboardKey.BACKSPACE) {
