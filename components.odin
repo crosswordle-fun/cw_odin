@@ -745,7 +745,6 @@ build_inventory_count_tile :: proc(
 	text_color := theme.text
 	if count == 0 {
 		face_color = theme.base
-		text_color = theme.text_alt
 	}
 
 	letter_font_size := scaled_i32(22, scale)
