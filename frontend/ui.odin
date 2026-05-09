@@ -41,7 +41,7 @@ ui_state_new :: proc(view: GameView, exp: u32) -> UiState {
 ui_update :: proc(state: ^GameState, dt: f32) {
 	frame_dt := dt
 	if frame_dt < 0 do frame_dt = 0
-	if frame_dt > 0.05 do frame_dt = 0.05
+	if frame_dt > UI_MAX_FRAME_DT do frame_dt = UI_MAX_FRAME_DT
 
 	state.ui.dt = frame_dt
 	state.ui.time += frame_dt
@@ -74,7 +74,7 @@ ui_update :: proc(state: ^GameState, dt: f32) {
 		}
 		state.ui.particles[i].x += state.ui.particles[i].vx * frame_dt
 		state.ui.particles[i].y += state.ui.particles[i].vy * frame_dt
-		state.ui.particles[i].vy += 34 * frame_dt
+		state.ui.particles[i].vy += PARTICLE_GRAVITY * frame_dt
 		state.ui.particles[i].rotation += state.ui.particles[i].spin * frame_dt
 	}
 
@@ -89,7 +89,7 @@ ui_update :: proc(state: ^GameState, dt: f32) {
 	for i in 0 ..< len(state.ui.tile_pops) {
 		if !state.ui.tile_pops[i].active do continue
 		state.ui.tile_pops[i].age += frame_dt
-		if state.ui.tile_pops[i].age >= game_data.effects.tile_pop_duration {
+		if state.ui.tile_pops[i].age >= EFFECTS_TILE_POP_DURATION {
 			state.ui.tile_pops[i].active = false
 		}
 	}
@@ -117,7 +117,7 @@ gameplay_view_index :: proc(view: GameView) -> i32 {
 }
 
 ui_view_transition_active :: proc(ui: UiState) -> bool {
-	return ui.time - ui.view_enter_time < game_data.effects.view_transition_duration
+	return ui.time - ui.view_enter_time < EFFECTS_VIEW_TRANSITION_DURATION
 }
 
 ui_view_transition_offsets :: proc(
@@ -130,11 +130,11 @@ ui_view_transition_offsets :: proc(
 	current_offset: rl.Vector2,
 ) {
 	age := ui.time - ui.view_enter_time
-	if age >= game_data.effects.view_transition_duration || ui.previous_view == current_view {
+	if age >= EFFECTS_VIEW_TRANSITION_DURATION || ui.previous_view == current_view {
 		return rl.Vector2{0, 0}, rl.Vector2{0, 0}
 	}
 
-	t := rl.EaseCubicOut(saturate(age / game_data.effects.view_transition_duration), 0, 1, 1)
+	t := rl.EaseCubicOut(saturate(age / EFFECTS_VIEW_TRANSITION_DURATION), 0, 1, 1)
 	previous_start := rl.Vector2{0, 0}
 	previous_end := rl.Vector2{0, 0}
 	current_start := rl.Vector2{0, 0}
@@ -182,7 +182,7 @@ ui_spawn_floating_exp :: proc(ui: ^UiState, amount: u32, x: f32, y: f32, color: 
 			amount   = amount,
 			x        = x,
 			y        = y,
-			lifetime = game_data.effects.floating_text_lifetime,
+			lifetime = EFFECTS_FLOATING_TEXT_LIFETIME,
 			color    = color,
 		}
 		return
@@ -200,21 +200,21 @@ ui_spawn_burst :: proc(ui: ^UiState, x: f32, y: f32, color: rl.Color, count: i32
 		}
 		if slot < 0 do return
 
-		angle := f32(rl.GetRandomValue(0, 628)) / 100.0
-		speed := f32(rl.GetRandomValue(42, 126))
-		life := f32(rl.GetRandomValue(45, 95)) / 100.0
-		size := f32(rl.GetRandomValue(3, 8))
+		angle := f32(rl.GetRandomValue(0, PARTICLE_ANGLE_RANGE)) / 100.0
+		speed := f32(rl.GetRandomValue(PARTICLE_SPEED_MIN, PARTICLE_SPEED_MAX))
+		life := f32(rl.GetRandomValue(PARTICLE_LIFETIME_MIN, PARTICLE_LIFETIME_MAX)) / 100.0
+		size := f32(rl.GetRandomValue(PARTICLE_SIZE_MIN, PARTICLE_SIZE_MAX))
 		ui.particles[slot] = UiParticle {
 			active   = true,
 			kind     = .Sparkle,
 			x        = x,
 			y        = y,
 			vx       = math.cos(angle) * speed,
-			vy       = math.sin(angle) * speed - 38,
+			vy       = math.sin(angle) * speed - PARTICLE_INITIAL_LIFT,
 			lifetime = life,
 			size     = size,
 			rotation = f32(rl.GetRandomValue(0, 360)),
-			spin     = f32(rl.GetRandomValue(-220, 220)),
+			spin     = f32(rl.GetRandomValue(-PARTICLE_SPIN_MAX, PARTICLE_SPIN_MAX)),
 			color    = color,
 		}
 	}
@@ -223,7 +223,7 @@ ui_spawn_burst :: proc(ui: ^UiState, x: f32, y: f32, color: rl.Color, count: i32
 ui_note_exp_reward :: proc(ui: ^UiState, amount: u32, x: f32, y: f32, color: rl.Color) {
 	ui.exp_gain_age = 0
 	ui_spawn_floating_exp(ui, amount, x, y, color)
-	ui_spawn_burst(ui, x, y, color, game_data.effects.exp_burst_count)
+	ui_spawn_burst(ui, x, y, color, EFFECTS_EXP_BURST_COUNT)
 }
 
 ui_note_tile_pop :: proc(ui: ^UiState, key: i32) {
@@ -263,9 +263,9 @@ ui_selector_move_offset :: proc(ui: UiState) -> (x: f32, y: f32) {
 	t := saturate(ui.selector_move_age / CROSS_SELECTOR_MOVE_DURATION)
 	progress := rl.EaseBackOut(t, 0, 1, 1)
 	remaining := 1 - progress
-	if t > 0.62 {
-		snap_t := saturate((t - 0.62) / 0.38)
-		remaining += math.sin(snap_t * math.PI * 2) * (1 - snap_t) * 0.045
+	if t > SELECTOR_SNAP_THRESHOLD {
+		snap_t := saturate((t - SELECTOR_SNAP_THRESHOLD) / SELECTOR_SNAP_DURATION)
+		remaining += math.sin(snap_t * math.PI * 2) * (1 - snap_t) * SELECTOR_SNAP_AMPLITUDE
 	}
 	return ui.selector_move_offset_x * remaining, ui.selector_move_offset_y * remaining
 }
@@ -274,36 +274,35 @@ ui_tile_pop_scale :: proc(ui: UiState, key: i32) -> f32 {
 	for i in 0 ..< len(ui.tile_pops) {
 		if !ui.tile_pops[i].active || ui.tile_pops[i].key != key do continue
 		age := ui.tile_pops[i].age
-		if age < 0.24 {
-			return 0.82 + rl.EaseBackOut(age, 0, 0.28, 0.24)
+		if age < TILE_ANIMATION_PHASE1 {
+			return(
+				TILE_POP_BASE_SCALE +
+				rl.EaseBackOut(age, 0, TILE_POP_OVERSHOOT_AMOUNT, TILE_ANIMATION_PHASE1) \
+			)
 		}
-		settle := saturate((age - 0.24) / 0.22)
-		return 1.10 + (1.0 - 1.10) * ease_out(settle)
+		settle := saturate((age - TILE_ANIMATION_PHASE1) / TILE_ANIMATION_PHASE2_OFFSET)
+		return TILE_POP_OVERSHOOT_SCALE + (1.0 - TILE_POP_OVERSHOOT_SCALE) * ease_out(settle)
 	}
 	return 1
 }
 
 ui_invalid_shake_x :: proc(ui: UiState, strength: f32) -> f32 {
-	if ui.invalid_age >= game_data.effects.invalid_shake_duration do return 0
-	t := ui.invalid_age / game_data.effects.invalid_shake_duration
-	return(
-		math.sin(ui.invalid_age * game_data.effects.invalid_shake_frequency) *
-		(1 - t) *
-		strength \
-	)
+	if ui.invalid_age >= EFFECTS_INVALID_SHAKE_DURATION do return 0
+	t := ui.invalid_age / EFFECTS_INVALID_SHAKE_DURATION
+	return math.sin(ui.invalid_age * EFFECTS_INVALID_SHAKE_FREQUENCY) * (1 - t) * strength
 }
 
 ui_view_transition_offset_y :: proc(ui: UiState, scale: f32) -> i32 {
 	age := ui.time - ui.view_enter_time
-	if age >= 0.32 do return 0
-	t := ease_out(age / 0.32)
-	return i32((1 - t) * 18 * scale)
+	if age >= UI_VIEW_ENTER_DURATION do return 0
+	t := ease_out(age / UI_VIEW_ENTER_DURATION)
+	return i32((1 - t) * f32(UI_VIEW_ENTER_OFFSET) * scale)
 }
 
 ui_view_transition_alpha :: proc(ui: UiState) -> u8 {
 	age := ui.time - ui.view_enter_time
-	if age >= 0.32 do return 255
-	return u8(255 * ease_out(age / 0.32))
+	if age >= UI_VIEW_ENTER_DURATION do return 255
+	return u8(255 * ease_out(age / UI_VIEW_ENTER_DURATION))
 }
 
 draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) {
@@ -311,7 +310,7 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 		particle := ui.particles[i]
 		if !particle.active do continue
 		t := particle.age / particle.lifetime
-		alpha := u8(220 * (1 - saturate(t)))
+		alpha := u8(f32(PARTICLE_MAX_ALPHA) * (1 - saturate(t)))
 		color := with_alpha(particle.color, alpha)
 		push_poly(buffer, particle.x, particle.y, 4, particle.size, particle.rotation, color, true)
 	}
@@ -320,10 +319,10 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 		text := ui.floating_text[i]
 		if !text.active do continue
 		t := saturate(text.age / text.lifetime)
-		y := text.y - ease_out(t) * game_data.effects.floating_text_rise
+		y := text.y - ease_out(t) * EFFECTS_FLOATING_TEXT_RISE
 		alpha := u8(255 * (1 - t))
 		label := fmt.caprintf("+%d EXP", text.amount)
-		font_size := scaled_i32(game_data.fonts.hud, ctx.scale)
+		font_size := scaled_i32(FONT_HUD, ctx.scale)
 		push_text(
 			buffer,
 			label,
@@ -337,8 +336,10 @@ draw_ui_effects :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) 
 
 draw_view_transition :: proc(buffer: ^RenderBuffer, ctx: RenderContext, ui: UiState) {
 	age := ui.time - ui.view_enter_time
-	if age >= game_data.effects.view_transition_duration do return
-	alpha := u8(120 * (1 - ease_out(age / 0.28)))
+	if age >= EFFECTS_VIEW_TRANSITION_DURATION do return
+	alpha := u8(
+		f32(UI_VIEW_TRANSITION_FLASH_ALPHA) * (1 - ease_out(age / UI_VIEW_TRANSITION_FLASH_AGE)),
+	)
 	push_rect(
 		buffer,
 		0,

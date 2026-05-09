@@ -9,7 +9,7 @@ read_pressed_letter :: proc() -> (letter: rune, ok: bool) {
 		if ch >= 'a' && ch <= 'z' do ch -= 'a' - 'A'
 		if ch >= 'A' && ch <= 'Z' {
 			letter := rune(ch)
-			for allowed in game_data.grid.alphabet {
+			for allowed in GRID_ALPHABET {
 				if allowed == letter do return letter, true
 			}
 		}

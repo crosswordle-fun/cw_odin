@@ -1,6 +1,5 @@
 package main
 
-import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
@@ -68,21 +67,9 @@ build_current_view_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state:
 }
 
 main :: proc() {
-	loaded_data, data_ok := game_data_load(DEFAULT_GAME_DATA_PATH)
-	if !data_ok {
-		fmt.eprintln("startup: could not load game_data.json5")
-		return
-	}
-	game_data = loaded_data
-
-	rl.SetTargetFPS(game_data.screen.target_fps)
+	rl.SetTargetFPS(SCREEN_TARGET_FPS)
 	rl.SetConfigFlags(rl.ConfigFlags{.WINDOW_RESIZABLE})
-
-	rl.InitWindow(
-		game_data.screen.virtual_width,
-		game_data.screen.virtual_height,
-		game_data.screen.window_title,
-	)
+	rl.InitWindow(SCREEN_VIRTUAL_WIDTH, SCREEN_VIRTUAL_HEIGHT, SCREEN_WINDOW_TITLE)
 	if !rl.IsWindowReady() do return
 	rl.SetExitKey(rl.KeyboardKey(0))
 	game_font_use_default()
@@ -94,33 +81,15 @@ main :: proc() {
 	defer render_frame_destroy(&render_frame)
 	previous_frame := render_frame_new()
 	defer render_frame_destroy(&previous_frame)
-	render_target := rl.LoadRenderTexture(
-		game_data.screen.virtual_width,
-		game_data.screen.virtual_height,
-	)
+	render_target := rl.LoadRenderTexture(SCREEN_VIRTUAL_WIDTH, SCREEN_VIRTUAL_HEIGHT)
 	defer rl.UnloadRenderTexture(render_target)
 
-	state := game_state_new(game_data.screen.virtual_width, game_data.screen.virtual_height)
+	state := game_state_new(SCREEN_VIRTUAL_WIDTH, SCREEN_VIRTUAL_HEIGHT)
 	game_set_view(&state, .Menu)
-	data_watcher := game_data_watcher_new(DEFAULT_GAME_DATA_PATH)
 
 	for !rl.WindowShouldClose() {
 		dt := rl.GetFrameTime()
-		if game_data_hot_reload(&data_watcher, &state) {
-			if render_target.texture.width != game_data.screen.virtual_width ||
-			   render_target.texture.height != game_data.screen.virtual_height {
-				rl.UnloadRenderTexture(render_target)
-				render_target = rl.LoadRenderTexture(
-					game_data.screen.virtual_width,
-					game_data.screen.virtual_height,
-				)
-			}
-		}
-		game_update_screen_size(
-			&state,
-			game_data.screen.virtual_width,
-			game_data.screen.virtual_height,
-		)
+		game_update_screen_size(&state, SCREEN_VIRTUAL_WIDTH, SCREEN_VIRTUAL_HEIGHT)
 		ui_update(&state, dt)
 		escape_pressed := rl.IsKeyPressed(rl.KeyboardKey.ESCAPE)
 
@@ -180,12 +149,9 @@ main :: proc() {
 
 		win_w := f32(rl.GetScreenWidth())
 		win_h := f32(rl.GetScreenHeight())
-		scale := math.min(
-			win_w / f32(game_data.screen.virtual_width),
-			win_h / f32(game_data.screen.virtual_height),
-		)
-		dst_w := f32(game_data.screen.virtual_width) * scale
-		dst_h := f32(game_data.screen.virtual_height) * scale
+		scale := math.min(win_w / f32(SCREEN_VIRTUAL_WIDTH), win_h / f32(SCREEN_VIRTUAL_HEIGHT))
+		dst_w := f32(SCREEN_VIRTUAL_WIDTH) * scale
+		dst_h := f32(SCREEN_VIRTUAL_HEIGHT) * scale
 		dst_x := (win_w - dst_w) * 0.5
 		dst_y := (win_h - dst_h) * 0.5
 		source := rl.Rectangle {

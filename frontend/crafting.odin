@@ -38,7 +38,7 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 			}
 		}
 
-		if valid && state.crafting.count == game_data.crafting.matching_required {
+		if valid && state.crafting.count == CRAFTING_MATCHING_REQUIRED {
 			letter := state.crafting.selected[0]
 			for i in 1 ..< state.crafting.count {
 				if state.crafting.selected[i] != letter {
@@ -52,27 +52,27 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 					state.frag_counts[i32(state.crafting.selected[i] - 'A')] -= 1
 				}
 				state.rune_counts[frag_index] += 1
-				state.exp += game_data.crafting.exp_reward
+				state.exp += CRAFTING_EXP_REWARD
 				state.crafting.crafted_rune = letter
 				ui_note_crafted_rune(&state.ui)
 				ui_note_exp_reward(
 					&state.ui,
-					game_data.crafting.exp_reward,
+					CRAFTING_EXP_REWARD,
 					f32(state.screen_width / 2),
-					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
+					f32(scaled_i32(CRAFTING_REWARD_EXP_Y, ctx.scale)),
 					state.theme.text,
 				)
 				ui_spawn_burst(
 					&state.ui,
 					f32(state.screen_width / 2),
-					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
+					f32(scaled_i32(CRAFTING_REWARD_EXP_Y, ctx.scale)),
 					state.theme.rune,
-					game_data.crafting.reward_burst_count,
+					CRAFTING_REWARD_BURST_COUNT,
 				)
 				crafting_clear_selection(&state.crafting)
 				did_craft = true
 			}
-		} else if valid && state.crafting.count == game_data.crafting.random_required {
+		} else if valid && state.crafting.count == CRAFTING_RANDOM_REQUIRED {
 			for i in 0 ..< state.crafting.count {
 				for j in i + 1 ..< state.crafting.count {
 					if state.crafting.selected[i] == state.crafting.selected[j] {
@@ -83,27 +83,28 @@ crafting_mode_frame :: proc(frame: ^RenderFrame, ctx: RenderContext, state: ^Gam
 				if !valid do break
 			}
 			if valid {
-				crafted_index := rl.GetRandomValue(0, i32(len(game_data.grid.alphabet)) - 1)
+				alphabet := GRID_ALPHABET
+				crafted_index := rl.GetRandomValue(0, i32(len(alphabet)) - 1)
 				for i in 0 ..< state.crafting.count {
 					state.frag_counts[i32(state.crafting.selected[i] - 'A')] -= 1
 				}
 				state.rune_counts[crafted_index] += 1
-				state.exp += game_data.crafting.exp_reward
-				state.crafting.crafted_rune = game_data.grid.alphabet[crafted_index]
+				state.exp += CRAFTING_EXP_REWARD
+				state.crafting.crafted_rune = alphabet[crafted_index]
 				ui_note_crafted_rune(&state.ui)
 				ui_note_exp_reward(
 					&state.ui,
-					game_data.crafting.exp_reward,
+					CRAFTING_EXP_REWARD,
 					f32(state.screen_width / 2),
-					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
+					f32(scaled_i32(CRAFTING_REWARD_EXP_Y, ctx.scale)),
 					state.theme.text,
 				)
 				ui_spawn_burst(
 					&state.ui,
 					f32(state.screen_width / 2),
-					f32(scaled_i32(game_data.crafting.reward_exp_y, ctx.scale)),
+					f32(scaled_i32(CRAFTING_REWARD_EXP_Y, ctx.scale)),
 					state.theme.rune,
-					game_data.crafting.reward_burst_count,
+					CRAFTING_REWARD_BURST_COUNT,
 				)
 				crafting_clear_selection(&state.crafting)
 				did_craft = true

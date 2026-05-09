@@ -60,9 +60,7 @@ RenderContext :: struct {
 }
 
 render_buffer_new :: proc() -> RenderBuffer {
-	return RenderBuffer {
-		commands = make([dynamic]RenderCommand, 0, game_data.screen.render_buffer_capacity),
-	}
+	return RenderBuffer{commands = make([dynamic]RenderCommand, 0, SCREEN_RENDER_BUFFER_CAPACITY)}
 }
 
 render_frame_new :: proc() -> RenderFrame {
@@ -112,9 +110,9 @@ game_font_load :: proc() {
 		rl.UnloadFont(game_custom_font)
 	}
 
-	game_custom_font = rl.LoadFont(game_data.screen.font_path)
+	game_custom_font = rl.LoadFont(SCREEN_FONT_PATH)
 	if !rl.IsFontValid(game_custom_font) {
-		fmt.eprintf("font: failed to load %s, keeping default font\n", game_data.screen.font_path)
+		fmt.eprintf("font: failed to load %s, keeping default font\n", SCREEN_FONT_PATH)
 		game_custom_font = {}
 		game_font_use_default()
 		return

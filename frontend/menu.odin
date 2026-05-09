@@ -23,27 +23,24 @@ MenuSelection :: enum {
 }
 
 menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
-	title_label := game_data.menu.title
-	start_label := game_data.menu.start_label
-	exit_label := game_data.menu.exit_label
-
-	title_face_size := scaled_i32(game_data.menu.title_face_size, ctx.scale)
+	title_face_size := scaled_i32(MENU_TITLE_FACE_SIZE, ctx.scale)
 	title_gap := i32(rl.Clamp(f32(title_face_size) / 20.0, 1, f32(title_face_size)))
 	title_base_height := title_face_size / 10
 	if title_base_height < 1 do title_base_height = 1
 	title_height := title_face_size + title_base_height
 	title_font_size := i32(
-		rl.Clamp(f32(title_face_size) * game_data.menu.title_font_ratio, 1, f32(title_face_size)),
+		rl.Clamp(f32(title_face_size) * MENU_TITLE_FONT_RATIO, 1, f32(title_face_size)),
 	)
-	button_font := scaled_i32(game_data.menu.button_font, ctx.scale)
-	button_padding_x := scaled_i32(game_data.menu.button_padding_x, ctx.scale)
-	button_padding_y := scaled_i32(game_data.menu.button_padding_y, ctx.scale)
-	button_gap := scaled_i32(game_data.menu.button_gap, ctx.scale)
+	button_font := scaled_i32(MENU_BUTTON_FONT, ctx.scale)
+	button_padding_x := scaled_i32(MENU_BUTTON_PADDING_X, ctx.scale)
+	button_padding_y := scaled_i32(MENU_BUTTON_PADDING_Y, ctx.scale)
+	button_gap := scaled_i32(MENU_BUTTON_GAP, ctx.scale)
 
+	title_label := MENU_TITLE
 	title_width :=
 		i32(len(title_label)) * title_face_size + (i32(len(title_label)) - 1) * title_gap
-	start_width := measure_text_width(start_label, button_font)
-	exit_width := measure_text_width(exit_label, button_font)
+	start_width := measure_text_width(MENU_START_LABEL, button_font)
+	exit_width := measure_text_width(MENU_EXIT_LABEL, button_font)
 	button_text_width := start_width
 	if exit_width > button_text_width do button_text_width = exit_width
 
@@ -52,7 +49,7 @@ menu_layout :: proc(ctx: RenderContext) -> MenuLayout {
 	title_x := (ctx.screen_width - title_width) / 2
 	title_y := (ctx.screen_height - title_height) / 2
 	button_x := (ctx.screen_width - button_width) / 2
-	start_y := title_y + title_height + scaled_i32(game_data.menu.title_button_gap, ctx.scale)
+	start_y := title_y + title_height + scaled_i32(MENU_TITLE_BUTTON_GAP, ctx.scale)
 	exit_y := start_y + button_height + button_gap
 
 	return MenuLayout {
@@ -82,26 +79,20 @@ menu_selection_to_state :: proc(selection: MenuSelection) -> i32 {
 }
 
 menu_title_drop_bounce :: proc(tile_age: f32) -> f32 {
-	if tile_age >= game_data.menu.drop_duration do return 0
-	bounce :=
-		(1 - saturate(tile_age / game_data.menu.drop_duration)) * -game_data.menu.drop_distance
+	if tile_age >= MENU_DROP_DURATION do return 0
+	bounce := (1 - saturate(tile_age / MENU_DROP_DURATION)) * -MENU_DROP_DISTANCE
 	if tile_age > 0 {
 		bounce =
-			-game_data.menu.drop_distance +
-			rl.EaseBounceOut(
-				tile_age,
-				0,
-				game_data.menu.drop_distance,
-				game_data.menu.drop_duration,
-			)
+			-MENU_DROP_DISTANCE +
+			rl.EaseBounceOut(tile_age, 0, MENU_DROP_DISTANCE, MENU_DROP_DURATION)
 	}
 	return bounce
 }
 
 menu_title_rebounce :: proc(tile_age: f32) -> f32 {
-	raise_duration := game_data.menu.rebounce_raise_time
-	fall_duration := game_data.menu.rebounce_fall_time
-	lift := -game_data.menu.rebounce_lift
+	raise_duration := MENU_REBOUNCE_RAISE_TIME
+	fall_duration := MENU_REBOUNCE_FALL_TIME
+	lift := -MENU_REBOUNCE_LIFT
 
 	if tile_age < 0 do return 0
 	if tile_age < raise_duration {
@@ -139,25 +130,24 @@ menu_title_cycle_color :: proc(
 }
 
 build_menu_title :: proc(buffer: ^RenderBuffer, layout: MenuLayout, theme: Theme, ui: UiState) {
-	title_label := game_data.menu.title
+	title_label := MENU_TITLE
 	elapsed := ui.time - ui.view_enter_time
-	title_stagger := game_data.menu.stagger
-	bounce_duration := game_data.menu.drop_duration
-	rebounce_period := game_data.menu.rebounce_period
-	initial_drop_duration := bounce_duration + f32(len(title_label) - 1) * title_stagger
+	bounce_duration := MENU_DROP_DURATION
+	rebounce_period := MENU_REBOUNCE_PERIOD
+	initial_drop_duration := bounce_duration + f32(len(title_label) - 1) * MENU_STAGGER
 
 	x := layout.title_x
 	for i in 0 ..< len(title_label) {
-		tile_age := elapsed - f32(i) * title_stagger
+		tile_age := elapsed - f32(i) * MENU_STAGGER
 		bounce := menu_title_drop_bounce(tile_age)
 		if elapsed >= initial_drop_duration + rebounce_period {
 			rebounce_elapsed := rl.Wrap(elapsed - initial_drop_duration, 0, rebounce_period)
-			rebounce_age := rebounce_elapsed - f32(i) * title_stagger
+			rebounce_age := rebounce_elapsed - f32(i) * MENU_STAGGER
 			if rebounce_age >= 0 {
 				bounce = menu_title_rebounce(rebounce_age)
 			}
 		}
-		color_age := elapsed - f32(i) * title_stagger
+		color_age := elapsed - f32(i) * MENU_STAGGER
 		color := menu_title_cycle_color(
 			theme.base,
 			TAILWIND_YELLOW_400,
@@ -198,7 +188,7 @@ build_menu_mode_view :: proc(
 	build_menu_title(&frame.ui, layout, theme, ui)
 	build_button(
 		&frame.ui,
-		game_data.menu.start_label,
+		MENU_START_LABEL,
 		layout.button_x,
 		layout.start_y,
 		layout.button_width,
@@ -209,7 +199,7 @@ build_menu_mode_view :: proc(
 	)
 	build_button(
 		&frame.ui,
-		game_data.menu.exit_label,
+		MENU_EXIT_LABEL,
 		layout.button_x,
 		layout.exit_y,
 		layout.button_width,
